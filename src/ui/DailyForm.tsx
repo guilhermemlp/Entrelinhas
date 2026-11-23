@@ -454,41 +454,42 @@ function ScoreInput({
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
-  const { label, scaleLow, scaleHigh, scaleKind } = indicator;
+  const { key, label, scaleLow, scaleHigh, scaleKind } = indicator;
+  const hintId = `scale-hint-${key}`;
   return (
-    <div className="score">
+    <fieldset className={value === null ? 'score score-unset' : 'score score-set'}>
+      <legend className="score-legend">{label}</legend>
       <div className="score-head">
-        <span>{label}</span>
-        <strong className={value === null ? 'unset' : ''}>{value ?? 'não preenchido'}</strong>
+        <span className="score-kind">{scaleKind === 'intensidade' ? 'Intensidade' : scaleKind === 'capacidade' ? 'Capacidade' : scaleKind === 'qualidade' ? 'Qualidade' : 'Frequência'}</span>
+        <output className={value === null ? 'score-value unset' : 'score-value'} htmlFor={key}>
+          {value === null ? 'Não avaliado' : value}
+        </output>
       </div>
       <div className="score-controls">
         <input
+          id={key}
           type="range"
           min={0}
           max={10}
           step={1}
-          value={value ?? 0}
-          disabled={value === null}
+          value={value ?? 5}
           aria-label={label}
-          aria-valuetext={value === null ? 'Não preenchido' : String(value)}
+          aria-describedby={hintId}
+          aria-valuetext={value === null ? 'Não avaliado; ajuste para registrar uma pontuação' : `${value} de 10`}
           onChange={e => onChange(Number(e.target.value))}
         />
-        {value === null ? (
-          <button type="button" className="link" onClick={() => onChange(0)}>
-            Definir como 0
-          </button>
-        ) : (
-          <button type="button" className="link" onClick={() => onChange(null)}>
-            limpar
+        {value !== null && (
+          <button type="button" className="link clear-score" onClick={() => onChange(null)} aria-label={`Limpar avaliação de ${label}`}>
+            Limpar
           </button>
         )}
       </div>
-      <div className="scale-endpoints" aria-hidden="true">
+      <div className="scale-endpoints" id={hintId}>
         <span>0 · {scaleLow}</span>
-        <span>5</span>
+        <span className="scale-midpoint">5</span>
         <span>10 · {scaleHigh}</span>
       </div>
-      <span className="sr-only">Tipo de escala: {scaleKind}.</span>
-    </div>
+      {value === null && <p className="score-unset-hint">Mova o controle para registrar sua avaliação. A posição inicial não representa uma resposta.</p>}
+    </fieldset>
   );
 }
