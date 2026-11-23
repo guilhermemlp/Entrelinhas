@@ -529,8 +529,8 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
 .review-dimensions button { text-align: left; }
 @media (max-width: 420px) {
   .overview-dimensions, .review-dimensions { grid-template-columns: 1fr; }
-  .score-options { gap: .18rem; }
-  .score-option { min-height: 2.45rem; border-radius: 6px; font-size: .86rem; }
+  .score-options { grid-template-columns: repeat(6,minmax(0,1fr)); gap: .3rem; }
+  .score-option { min-height: 2.75rem; border-radius: 6px; font-size: .9rem; }
 }
 
 .entry-context { margin: .15rem 0 .8rem; }
