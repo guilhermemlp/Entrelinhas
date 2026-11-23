@@ -192,3 +192,67 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
 .scale-endpoints span:nth-child(2) { text-align: center; }
 .scale-endpoints span:last-child { text-align: right; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+
+/* Etapas do registro: navegação direta e progresso por seção */
+.step-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+}
+.step-nav-item {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.45rem 0.2rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+.step-nav-item.active {
+  color: var(--accent);
+  background: #edf2f8;
+  border-color: #d5dfed;
+  font-weight: 650;
+}
+.step-nav-number {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: #e9edf2;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+.step-nav-item.active .step-nav-number {
+  color: #fff;
+  background: var(--accent);
+}
+.step-nav-label {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+@media (max-width: 540px) {
+  .step-nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.3rem;
+    padding: 0.15rem 0 0.45rem;
+    scrollbar-width: thin;
+  }
+  .step-nav-item {
+    flex: 0 0 5.25rem;
+    min-height: 4.2rem;
+  }
+  .step-nav-label { font-size: 0.68rem; }
+}
