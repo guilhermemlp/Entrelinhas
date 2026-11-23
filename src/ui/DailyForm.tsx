@@ -161,8 +161,9 @@ export function DailyForm({ date }: { date: string }) {
     const next = fn(fieldsRef.current!);
     fieldsRef.current = next;
     revisionRef.current += 1;
-    if (entryRef.current) {
-      void queueOffline(() => saveOfflineDraft(entryRef.current!.id, entryRef.current!.updated_at, next))
+    const currentEntry = entryRef.current;
+    if (currentEntry) {
+      void queueOffline(() => saveOfflineDraft(currentEntry.id, currentEntry.updated_at, next))
         .catch(() => setMessage('Não foi possível guardar a cópia offline neste navegador.'));
     }
     setFields(next);
