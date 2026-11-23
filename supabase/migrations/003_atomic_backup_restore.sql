@@ -57,7 +57,7 @@ begin
     v_seen_dates := array_append(v_seen_dates, v_date);
 
     v_status := v_item->>'status';
-    if v_status not in ('draft', 'complete') then
+    if v_status is null or v_status not in ('draft', 'complete') then
       raise exception 'Status inválido no backup para %', v_date;
     end if;
 
