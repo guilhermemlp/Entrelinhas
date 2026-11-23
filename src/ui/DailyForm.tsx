@@ -26,28 +26,26 @@ export function DailyForm({ date }: { date: string }) {
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState('');
 
-  // Refs evitam closures desatualizadas no debounce e no salvamento em curso.
+  // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
   const fieldsRef = useRef<DraftFields | null>(null);
-  const savingRef = useRef(false);
-  const pendingRef = useRef(false);
+  const saveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  const revisionRef = useRef(0);
 
-  // Carrega (ou cria) o rascunho da data selecionada.
   useEffect(() => {
     let cancelled = false;
     setEntry(null); setFields(null); setDirty(false);
     setMessage(''); setLoadError(''); setSaveState('idle');
     entryRef.current = null; fieldsRef.current = null;
+    revisionRef.current = 0;
+    saveQueueRef.current = Promise.resolve(true);
 
     getOrCreateEntry(date)
       .then(e => {
         if (cancelled) return;
         const f: DraftFields = {
-          sleep_hours: e.sleep_hours,
-          sleep_notes: e.sleep_notes,
-          events_context: e.events_context,
-          behavior_notes: e.behavior_notes,
-          scores: e.scores,
+          sleep_hours: e.sleep_hours, sleep_notes: e.sleep_notes,
+          events_context: e.events_context, behavior_notes: e.behavior_notes, scores: e.scores,
         };
         entryRef.current = e; fieldsRef.current = f;
         setEntry(e); setFields(f); setStatus(e.status);
@@ -56,51 +54,43 @@ export function DailyForm({ date }: { date: string }) {
     return () => { cancelled = true; };
   }, [date]);
 
-  // Persiste sem perder edições feitas durante um salvamento em andamento.
-  const persist = useCallback(async (): Promise<boolean> => {
-    const e = entryRef.current;
-    const f = fieldsRef.current;
-    if (!e || !f) return false;
-
-    const parsed = draftSchema.safeParse(f);
-    if (!parsed.success) {
-      setSaveState('error');
-      setMessage(parsed.error.issues[0]?.message ?? 'Dados inválidos');
-      return false;
-    }
-    if (savingRef.current) { pendingRef.current = true; return true; }
-
-    savingRef.current = true;
-    setSaveState('saving');
-    try {
-      const updatedAt = await saveDraft(e, f);
-      entryRef.current = { ...e, updated_at: updatedAt, scores: f.scores };
-      setSaveState('saved');
-      setMessage('');
-      return true;
-    } catch (err) {
-      setSaveState('error');
-      setMessage(
-        err instanceof ConflictError
-          ? err.message
-          : 'Não foi possível salvar agora. Suas alterações continuam aqui; tente novamente.',
-      );
-      return false;
-    } finally {
-      savingRef.current = false;
-      if (pendingRef.current) {
-        pendingRef.current = false;
-        void persist();
+  const persist = useCallback((): Promise<boolean> => {
+    const run = async (): Promise<boolean> => {
+      const e = entryRef.current;
+      const f = fieldsRef.current;
+      if (!e || !f) return false;
+      const parsed = draftSchema.safeParse(f);
+      if (!parsed.success) {
+        setSaveState('error');
+        setMessage(parsed.error.issues[0]?.message ?? 'Dados inválidos');
+        return false;
       }
-    }
+      setSaveState('saving');
+      try {
+        const updatedAt = await saveDraft(e, f);
+        const updated = { ...e, updated_at: updatedAt, scores: f.scores };
+        entryRef.current = updated;
+        setEntry(updated);
+        setSaveState('saved'); setMessage('');
+        return true;
+      } catch (err) {
+        setSaveState('error');
+        setMessage(err instanceof ConflictError ? err.message : 'Não foi possível salvar. As alterações permanecem nesta tela; tente novamente.');
+        return false;
+      }
+    };
+    const queued = saveQueueRef.current.then(run, run);
+    saveQueueRef.current = queued;
+    return queued;
   }, []);
-
   // Autosave com debounce.
   useEffect(() => {
     if (!dirty) return;
+    const revision = revisionRef.current;
     const t = setTimeout(() => {
-      void persist();
-      setDirty(false);
+      void persist().then(ok => {
+        if (ok && revisionRef.current === revision) setDirty(false);
+      });
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [dirty, fields, persist]);
@@ -108,6 +98,7 @@ export function DailyForm({ date }: { date: string }) {
   function update(fn: (f: DraftFields) => DraftFields) {
     const next = fn(fieldsRef.current!);
     fieldsRef.current = next;
+    revisionRef.current += 1;
     setFields(next);
     setDirty(true);
     setSaveState('idle');
@@ -122,13 +113,20 @@ export function DailyForm({ date }: { date: string }) {
       setMessage(`Faltam ${missing.length} campo(s). Ex.: ${missing.slice(0, 3).join('; ')}.`);
       return;
     }
-    const saved = await persist();
-    if (!saved) return;
+    setSaveState('saving');
     try {
+      let saved = false;
+      let stableRevision = -1;
+      while (!saved || stableRevision !== revisionRef.current) {
+        stableRevision = revisionRef.current;
+        saved = await persist();
+        if (!saved) return;
+      }
       await completeEntry(entryRef.current.id);
-      setStatus('complete');
+      setStatus('complete'); setDirty(false);
       setMessage('Registro concluído.');
     } catch (err) {
+      setSaveState('error');
       setMessage(err instanceof Error ? err.message : 'Falha ao concluir.');
     }
   }
@@ -206,7 +204,7 @@ export function DailyForm({ date }: { date: string }) {
           type="button"
           className="primary"
           onClick={onComplete}
-          disabled={status === 'complete'}
+          disabled={status === 'complete' || saveState === 'saving'}
         >
           Concluir registro
         </button>
