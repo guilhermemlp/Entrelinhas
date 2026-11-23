@@ -138,32 +138,23 @@ export async function fetchAllForExport(): Promise<ExportEntry[]> {
   }));
 }
 
-// Restauração: NÃO sobrescreve dias existentes. Pula e informa.
+// Restauração atômica no banco: ou o lote inteiro é importado, ou nada é alterado.
+// Dias existentes são preservados e retornados como ignorados.
 export async function restoreEntries(entries: ExportEntry[]): Promise<{
   imported: number;
   skipped: string[];
 }> {
-  const skipped: string[] = [];
-  let imported = 0;
-  for (const e of entries) {
-    const { data: existing, error } = await supabase
-      .from('daily_entry').select('id').eq('entry_date', e.entry_date).maybeSingle();
-    if (error) throw error;
-    if (existing) { skipped.push(e.entry_date); continue; }
-
-    const loaded = await getOrCreateEntry(e.entry_date);
-    const draft: DraftFields = {
-      sleep_hours: e.sleep_hours,
-      sleep_notes: e.sleep_notes,
-      events_context: e.events_context,
-      behavior_notes: e.behavior_notes,
-      scores: e.scores,
-    };
-    await saveDraft(loaded, draft);
-    if (e.status === 'complete') await completeEntry(loaded.id);
-    imported++;
+  const { data, error } = await supabase.rpc('restore_entries', {
+    p_entries: entries,
+  });
+  if (error) throw error;
+  if (!data || typeof data.imported !== 'number' || !Array.isArray(data.skipped)) {
+    throw new Error('O banco retornou uma confirmação de restauração inválida.');
   }
-  return { imported, skipped };
+  return {
+    imported: data.imported,
+    skipped: data.skipped.map((date: string) => String(date)),
+  };
 }
 
 // Apagamento total do próprio usuário (LGPD: eliminação). Ação explícita.
