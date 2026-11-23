@@ -162,7 +162,7 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
         </header>
         {reportEntries.map(entry => (
           <section className="print-entry" key={entry.entry_date}>
-            <h2>{new Date(`${entry.entry_date}T12:00:00`).toLocaleDateString('pt-BR', { dateStyle: 'full' })}</h2>
+            <h2>{new Date(`${entry.entry_date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
             <p>Status: {entry.status === 'complete' ? 'Concluído' : 'Rascunho'} · Sono: {entry.sleep_hours === null ? 'não informado' : `${entry.sleep_hours} horas`}</p>
             {DIMENSIONS.map(dim => (
               <div className="print-dimension" key={dim.key}>
