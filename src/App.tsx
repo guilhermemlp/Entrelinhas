@@ -136,6 +136,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
                 ← Voltar para hoje
               </button>
             )}
+            <div className="entry-context"><span className="eyebrow">{date === today ? 'Meu dia' : 'Histórico · registro selecionado'}</span><p>{date === today ? 'Seu espaço de observação.' : 'Consultando ou revisando um registro anterior.'}</p></div>
             <DailyForm key={date} date={date} />
           </>
         )}
@@ -145,8 +146,8 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
       </main>
 
       <nav className="tabbar" aria-label="Navegação principal">
-        <TabButton active={tab === 'registro'} onClick={() => { setDate(today); setTab('registro'); }}>Meu dia</TabButton>
-        <TabButton active={tab === 'calendario'} onClick={() => setTab('calendario')}>Histórico</TabButton>
+        <TabButton active={tab === 'registro' && date === today} onClick={() => { setDate(today); setTab('registro'); }}>Meu dia</TabButton>
+        <TabButton active={tab === 'calendario' || (tab === 'registro' && date !== today)} onClick={() => setTab('calendario')}>Histórico</TabButton>
         <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}>Análises</TabButton>
         <TabButton active={tab === 'dados'} onClick={() => setTab('dados')}>Dados e configurações</TabButton>
       </nav>
