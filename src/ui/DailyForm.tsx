@@ -10,6 +10,14 @@ import {
 
 const DEBOUNCE_MS = 800;
 
+const FORM_STEPS = [
+  { title: 'Humor e energia', description: 'Como estiveram seu humor, disposição e nível de ativação.', dimensions: ['mood', 'energy'] },
+  { title: 'Cognição e ansiedade', description: 'Observe pensamentos, atenção, preocupações e tensão.', dimensions: ['cognition', 'anxiety'] },
+  { title: 'Impulsividade e sono', description: 'Registre impulsos, comportamentos repetitivos e recuperação.', dimensions: ['impulsivity', 'sleep'] },
+  { title: 'Comportamento e contexto', description: 'Observe interações, atividades e acontecimentos do dia.', dimensions: ['social', 'context'] },
+  { title: 'Registro narrativo', description: 'Acrescente contexto que os indicadores não conseguem representar.', dimensions: [] },
+] as const;
+
 function formatDate(key: string): string {
   return new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -28,7 +36,7 @@ export function DailyForm({ date }: { date: string }) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState('');
-  const [offlineConflict, setOfflineConflict] = useState(false);
+  const [offlineConflict, setOfflineConflict] = useState(false);\n  const [step, setStep] = useState(0);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
@@ -40,7 +48,7 @@ export function DailyForm({ date }: { date: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setEntry(null); setFields(null); setDirty(false);
+    setEntry(null); setFields(null); setDirty(false); setStep(0);
     setMessage(''); setLoadError(''); setSaveState('idle'); setOfflineConflict(false);
     offlineConflictRef.current = false;
     entryRef.current = null; fieldsRef.current = null;
@@ -217,8 +225,23 @@ export function DailyForm({ date }: { date: string }) {
         </small>
       </header>
 
-      <p className="progress">
-        {filled}/{total} indicadores · sono {fields.sleep_hours !== null ? 'informado' : 'pendente'}
+      <section className="form-progress" aria-label="Progresso do registro">
+        <div className="form-progress-meta">
+          <span>Etapa {step + 1} de {FORM_STEPS.length}</span>
+          <strong>{filled} de {total} indicadores preenchidos</strong>
+        </div>
+        <div className="progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={FORM_STEPS.length} aria-valuenow={step + 1}>
+          <span style={{ width: `${((step + 1) / FORM_STEPS.length) * 100}%` }} />
+        </div>
+        <div className="step-heading">
+          <h3>{FORM_STEPS[step].title}</h3>
+          <p>{FORM_STEPS[step].description}</p>
+        </div>
+      </section>
+
+      <p className="scale-guidance">
+        Escala de 0 a 10: 0 significa que a experiência não esteve presente; 10, que esteve muito intensa ou frequente.
+        Nos indicadores de capacidade ou controle, avalie o quanto essa característica esteve presente — não se ela foi boa ou ruim.
       </p>
 
       {status === 'complete' && (
@@ -227,7 +250,7 @@ export function DailyForm({ date }: { date: string }) {
         </p>
       )}
 
-      {DIMENSIONS.map(dim => (
+      {DIMENSIONS.filter(dim => (FORM_STEPS[step].dimensions as readonly string[]).includes(dim.key)).map(dim => (
         <DimensionSection
           key={dim.key}
           dim={dim}
@@ -237,7 +260,7 @@ export function DailyForm({ date }: { date: string }) {
         />
       ))}
 
-      <section className="narrative">
+      {step === FORM_STEPS.length - 1 && <section className="narrative">
         <h3>Registro narrativo</h3>
         <label>
           Acontecimentos e contexto <span className="req">*</span>
@@ -263,7 +286,7 @@ export function DailyForm({ date }: { date: string }) {
             rows={2}
           />
         </label>
-      </section>
+      </section>}
 
       <footer className="daily-footer">
         {message && <p className="message">{message}</p>}
@@ -293,14 +316,25 @@ export function DailyForm({ date }: { date: string }) {
             Descartar cópia local e recarregar
           </button>
         )}
-        <button
-          type="button"
-          className="primary"
-          onClick={onComplete}
-          disabled={status === 'complete' || saveState === 'saving' || offlineConflict}
-        >
-          Concluir registro
-        </button>
+        <div className="step-actions">
+          <button type="button" className="secondary" onClick={() => setStep(current => Math.max(0, current - 1))} disabled={step === 0}>
+            Voltar
+          </button>
+          {step < FORM_STEPS.length - 1 ? (
+            <button type="button" className="primary" onClick={() => setStep(current => Math.min(FORM_STEPS.length - 1, current + 1))}>
+              Próxima etapa
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="primary"
+              onClick={onComplete}
+              disabled={status === 'complete' || saveState === 'saving' || offlineConflict}
+            >
+              Concluir registro
+            </button>
+          )}
+        </div>
       </footer>
     </form>
   );
