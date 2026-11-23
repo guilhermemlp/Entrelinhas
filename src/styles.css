@@ -552,3 +552,36 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   .print-dimension dt, .print-dimension dd { margin: 0; }
   .print-report footer { margin-top: 1rem; }
 }
+
+
+/* Refinamento de navegação e leitura — etapa 1 do redesign */
+.step-heading h3:focus { outline: none; }
+.step-heading h3 { scroll-margin-top: 5.5rem; }
+.step-nav {
+  scrollbar-width: thin;
+  scrollbar-color: #b8c2cf transparent;
+}
+.step-nav-item { transition: background-color 140ms ease, border-color 140ms ease; }
+.step-nav-item:focus-visible { outline-offset: 1px; }
+.step-actions { padding-top: .25rem; }
+.daily-footer {
+  z-index: 1;
+  border-top: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+}
+.score-option { touch-action: manipulation; }
+.score-option:not(.selected):hover { background: #f0f3f7; border-color: #bdc8d6; }
+.overview-dimension:hover { border-color: #bdc8d6; }
+@media (min-width: 760px) {
+  .content { max-width: 820px; padding: 1.5rem 1.25rem; }
+  .step-nav { gap: .5rem; }
+  .step-nav-item { padding: .6rem .35rem; font-size: .76rem; }
+  .overview-dimensions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .review-dimensions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+  .daily-footer { padding-bottom: max(.8rem, env(safe-area-inset-bottom)); }
+  .step-nav { scroll-snap-type: x proximity; }
+  .step-nav-item { scroll-snap-align: start; }
+  .step-actions button { min-height: 2.9rem; }
+  .score-options { gap: .35rem; }
+}
