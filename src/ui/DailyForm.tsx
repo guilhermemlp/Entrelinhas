@@ -48,7 +48,12 @@ export function DailyForm({ date }: { date: string }) {
 
     getOrCreateEntry(date)
       .then(async e => {
-        const pending = await getOfflineDraft(e.id).catch(() => null);
+        let pending = null;
+        try {
+          pending = await getOfflineDraft(e.id);
+        } catch {
+          if (!cancelled) setMessage('O armazenamento offline não está disponível neste navegador; o salvamento pela internet continua habilitado.');
+        }
         if (cancelled) return;
         const serverFields: DraftFields = {
           sleep_hours: e.sleep_hours, sleep_notes: e.sleep_notes,
