@@ -4,6 +4,9 @@ import { draftSchema, missingForComplete, type DraftFields } from '../domain/sch
 import {
   getOrCreateEntry, saveDraft, completeEntry, ConflictError, type LoadedEntry,
 } from '../data/repository';
+import {
+  saveOfflineDraft, getOfflineDraft, deleteOfflineDraft,
+} from '../data/offlineDrafts';
 
 const DEBOUNCE_MS = 800;
 
@@ -25,6 +28,7 @@ export function DailyForm({ date }: { date: string }) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState('');
+  const [offlineConflict, setOfflineConflict] = useState(false);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
@@ -35,20 +39,33 @@ export function DailyForm({ date }: { date: string }) {
   useEffect(() => {
     let cancelled = false;
     setEntry(null); setFields(null); setDirty(false);
-    setMessage(''); setLoadError(''); setSaveState('idle');
+    setMessage(''); setLoadError(''); setSaveState('idle'); setOfflineConflict(false);
     entryRef.current = null; fieldsRef.current = null;
     revisionRef.current = 0;
     saveQueueRef.current = Promise.resolve(true);
 
     getOrCreateEntry(date)
-      .then(e => {
+      .then(async e => {
+        const pending = await getOfflineDraft(e.id).catch(() => null);
         if (cancelled) return;
-        const f: DraftFields = {
+        const serverFields: DraftFields = {
           sleep_hours: e.sleep_hours, sleep_notes: e.sleep_notes,
           events_context: e.events_context, behavior_notes: e.behavior_notes, scores: e.scores,
         };
-        entryRef.current = e; fieldsRef.current = f;
-        setEntry(e); setFields(f); setStatus(e.status);
+        const recovered = pending?.fields ?? serverFields;
+        entryRef.current = e; fieldsRef.current = recovered;
+        setEntry(e); setFields(recovered); setStatus(e.status);
+        if (pending) {
+          if (pending.baseUpdatedAt === e.updated_at) {
+            revisionRef.current = 1;
+            setDirty(true);
+            setMessage('Rascunho local recuperado. Sincronizando com o servidor…');
+          } else {
+            setOfflineConflict(true);
+            setSaveState('error');
+            setMessage('Há uma cópia local e o registro do servidor foi alterado em outra sessão. A cópia local foi preservada; não será sobrescrita automaticamente.');
+          }
+        }
       })
       .catch(err => { if (!cancelled) setLoadError(err.message); });
     return () => { cancelled = true; };
@@ -58,7 +75,8 @@ export function DailyForm({ date }: { date: string }) {
     const run = async (): Promise<boolean> => {
       const e = entryRef.current;
       const f = fieldsRef.current;
-      if (!e || !f) return false;
+      if (!e || !f || offlineConflict) return false;
+      const revision = revisionRef.current;
       const parsed = draftSchema.safeParse(f);
       if (!parsed.success) {
         setSaveState('error');
@@ -67,15 +85,23 @@ export function DailyForm({ date }: { date: string }) {
       }
       setSaveState('saving');
       try {
+        await saveOfflineDraft(e.id, e.updated_at, f);
         const updatedAt = await saveDraft(e, f);
         const updated = { ...e, updated_at: updatedAt, scores: f.scores };
         entryRef.current = updated;
         setEntry(updated);
+        if (revisionRef.current === revision) {
+          await deleteOfflineDraft(e.id);
+        } else if (fieldsRef.current) {
+          await saveOfflineDraft(e.id, updatedAt, fieldsRef.current);
+        }
         setSaveState('saved'); setMessage('');
         return true;
       } catch (err) {
         setSaveState('error');
-        setMessage(err instanceof ConflictError ? err.message : 'Não foi possível salvar. As alterações permanecem nesta tela; tente novamente.');
+        setMessage(err instanceof ConflictError
+          ? err.message
+          : 'Não foi possível sincronizar. Uma cópia local foi guardada neste navegador; tente novamente quando a conexão voltar.');
         return false;
       }
     };
@@ -99,6 +125,10 @@ export function DailyForm({ date }: { date: string }) {
     const next = fn(fieldsRef.current!);
     fieldsRef.current = next;
     revisionRef.current += 1;
+    if (entryRef.current) {
+      void saveOfflineDraft(entryRef.current.id, entryRef.current.updated_at, next)
+        .catch(() => setMessage('Não foi possível guardar a cópia offline neste navegador.'));
+    }
     setFields(next);
     setDirty(true);
     setSaveState('idle');
@@ -106,7 +136,7 @@ export function DailyForm({ date }: { date: string }) {
 
   async function onComplete() {
     const f = fieldsRef.current;
-    if (!f || !entryRef.current) return;
+    if (!f || !entryRef.current || offlineConflict) return;
     const missing = missingForComplete(f);
     if (missing.length > 0) {
       setSaveState('error');
@@ -200,18 +230,36 @@ export function DailyForm({ date }: { date: string }) {
 
       <footer className="daily-footer">
         {message && <p className="message">{message}</p>}
-        {saveState === 'error' && dirty && (
+        {saveState === 'error' && dirty && !offlineConflict && (
           <button type="button" className="link" onClick={() => {
             void persist().then(ok => { if (ok) setDirty(false); });
           }}>
             Tentar salvar novamente
           </button>
         )}
+        {offlineConflict && (
+          <button type="button" className="link" onClick={() => {
+            if (!window.confirm('Descartar a cópia local e carregar a versão do servidor?')) return;
+            const current = entryRef.current;
+            if (!current) return;
+            void deleteOfflineDraft(current.id).then(() => getOrCreateEntry(date)).then(e => {
+              const fresh: DraftFields = {
+                sleep_hours: e.sleep_hours, sleep_notes: e.sleep_notes,
+                events_context: e.events_context, behavior_notes: e.behavior_notes, scores: e.scores,
+              };
+              entryRef.current = e; fieldsRef.current = fresh;
+              setEntry(e); setFields(fresh); setStatus(e.status);
+              setOfflineConflict(false); setDirty(false); setSaveState('saved'); setMessage('');
+            }).catch(err => setMessage(err instanceof Error ? err.message : 'Falha ao recarregar.'));
+          }}>
+            Descartar cópia local e recarregar
+          </button>
+        )}
         <button
           type="button"
           className="primary"
           onClick={onComplete}
-          disabled={status === 'complete' || saveState === 'saving'}
+          disabled={status === 'complete' || saveState === 'saving' || offlineConflict}
         >
           Concluir registro
         </button>
