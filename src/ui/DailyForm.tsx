@@ -96,6 +96,10 @@ export function DailyForm({ date }: { date: string }) {
         setEntry(updated);
         if (revisionRef.current === revision) {
           await deleteOfflineDraft(e.id).catch(() => undefined);
+          // Uma edição pode ocorrer enquanto a limpeza do IndexedDB está pendente.
+          if (revisionRef.current !== revision && fieldsRef.current) {
+            await saveOfflineDraft(e.id, updatedAt, fieldsRef.current).catch(() => undefined);
+          }
         } else if (fieldsRef.current) {
           await saveOfflineDraft(e.id, updatedAt, fieldsRef.current).catch(() => undefined);
         }
@@ -115,6 +119,17 @@ export function DailyForm({ date }: { date: string }) {
     saveQueueRef.current = queued;
     return queued;
   }, []);
+  // Avisa antes de fechar/navegar enquanto há alterações não confirmadas.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   // Autosave com debounce.
   useEffect(() => {
     if (!dirty) return;
