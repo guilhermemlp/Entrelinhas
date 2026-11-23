@@ -17,6 +17,9 @@ describe('catálogo de indicadores', () => {
     expect(ALL_INDICATORS.length).toBe(45);
     expect(new Set(INDICATOR_KEYS).size).toBe(45); // sem duplicatas
     expect(DIMENSIONS.length).toBe(8);
+    expect(ALL_INDICATORS.every(i => i.scaleLow && i.scaleHigh && i.scaleKind)).toBe(true);
+    expect(ALL_INDICATORS.find(i => i.key === 'qualidade_sono')?.scaleLow).toBe('Muito ruim');
+    expect(ALL_INDICATORS.find(i => i.key === 'controle_impulsos')?.scaleHigh).toBe('Muito alto');
   });
 });
 
