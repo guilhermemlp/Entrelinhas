@@ -54,10 +54,11 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 
 A chave *anon* é pública por desenho. Nunca coloque a *service_role* no front.
 
-### 3. Ícones do PWA
+### 3. PWA
 
-Coloque `public/icon-192.png` e `public/icon-512.png` (necessários para instalar na tela
-inicial). Sem eles, a aplicação funciona, mas o celular pode não oferecer a instalação.
+Os ícones `public/icon-192.png` e `public/icon-512.png` já estão versionados. O manifesto
+é gerado pelo Vite PWA e o service worker mantém apenas o shell da aplicação em cache;
+dados pessoais e chamadas ao Supabase não entram no cache.
 
 ### 4. Executar
 
@@ -110,6 +111,8 @@ Nenhum servidor precisa ficar ligado no seu computador.
 - **Descritiva (ativa):** média, desvio padrão, mínimo/máximo, comparação dos últimos
   7 dias com os 7 anteriores, tendência por mínimos quadrados (somente com ≥ 7 dias),
   média móvel de 7 dias, gráficos e calendário. Todo resultado mostra `n`.
+- **Cobertura:** quantidade de dias concluídos, em rascunho e sem registro, com percentual
+  de cobertura do período. A tela sinaliza amostras pequenas e ausência de valores.
 - **Correlação (implementada, desativada):** Spearman com tratamento de empates. Só é
   exibida se `CORRELATIONS_ENABLED = true` **e** houver pelo menos `MIN_PAIRS = 30` pares
   completos. Esse limiar fica em `src/domain/analysis.ts`; ajuste quando quiser.
@@ -138,8 +141,8 @@ Honestidade sobre o que **não** está pronto:
    cobre RLS, salvamento, conclusão, auditoria e restauração com dois usuários fictícios.
    Ela ainda precisa ser executada em um Supabase local; não declare a segurança multiusuário
    validada até os testes passarem.
-4. **Lista de indicadores duplicada:** o catálogo existe no SQL e no TypeScript. Qualquer
-   mudança exige alterar os dois. Um teste de integração deveria comparar ambos.
+3. **Lista de indicadores duplicada:** o catálogo existe no SQL e no TypeScript. Qualquer
+   mudança exige alterar os dois. Ainda falta um teste automatizado que compare os dois catálogos.
 5. **Plano gratuito do Supabase:** projetos inativos por um período podem ser pausados, e
    o plano gratuito tem backups limitados. Confira a política atual no painel. Por isso,
    faça **backup JSON periódico** pela aba Dados e guarde-o fora da nuvem.
@@ -151,7 +154,8 @@ Honestidade sobre o que **não** está pronto:
 
 ## Próximos passos sugeridos
 
-- Buffer offline com IndexedDB e sincronização ao reconectar.
 - Executar e ampliar os testes de integração do banco com `supabase start`.
-- Autenticação com segundo fator (TOTP) no Supabase, já que os dados são sensíveis.
-- Exportação de relatório mensal como arquivo, não só impressão.
+- Adicionar teste automatizado de consistência entre os 45 indicadores do SQL e TypeScript.
+- Avaliar autenticação com segundo fator (TOTP) no Supabase, já que os dados são sensíveis.
+- Exportação de relatório mensal como arquivo estruturado, além da impressão.
+- Testes de usabilidade em celular, teclado e leitor de tela.
