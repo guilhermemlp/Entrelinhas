@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(11);
 
 -- Usuários de teste isolados; não usar dados reais.
 insert into auth.users (
