@@ -7,8 +7,14 @@ if (!url || !anonKey) {
   throw new Error('Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env');
 }
 
-// A chave "anon" é pública por desenho. A proteção dos dados é o RLS
-// definido em supabase/migrations/001_init.sql, não o sigilo dessa chave.
+// Mantém a sessão no armazenamento persistente do navegador.
+// O Supabase renova os tokens automaticamente enquanto o refresh token
+// e as políticas de sessão do projeto permitirem.
 export const supabase = createClient(url, anonKey, {
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  },
 });
