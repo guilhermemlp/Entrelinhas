@@ -20,11 +20,14 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    // INITIAL_SESSION já considera a sessão persistida no localStorage.
+    // Centralizar a inicialização no listener evita a corrida entre getSession()
+    // e eventos de autenticação (por exemplo, o retorno do link mágico).
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
       setReady(true);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
