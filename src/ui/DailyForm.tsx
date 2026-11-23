@@ -411,10 +411,16 @@ function ScoreInput({
           max={10}
           step={1}
           value={value ?? 0}
+          disabled={value === null}
           aria-label={label}
+          aria-valuetext={value === null ? 'Não preenchido' : String(value)}
           onChange={e => onChange(Number(e.target.value))}
         />
-        {value !== null && (
+        {value === null ? (
+          <button type="button" className="link" onClick={() => onChange(0)}>
+            Definir como 0
+          </button>
+        ) : (
           <button type="button" className="link" onClick={() => onChange(null)}>
             limpar
           </button>
