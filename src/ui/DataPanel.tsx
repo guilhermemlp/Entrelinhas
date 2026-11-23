@@ -31,17 +31,17 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <section className="data-panel">
-      <h2>Exportar</h2>
+      <h2>Dados e exportação</h2>
       <div className="row">
         <button type="button" disabled={busy} onClick={() => run(async () => {
           const entries = await fetchAllForExport();
-          download(`diario-${stamp}.csv`, toCsv(entries), 'text/csv;charset=utf-8');
+          download(`entrelinhas-${stamp}.csv`, toCsv(entries), 'text/csv;charset=utf-8');
           setMessage(`${entries.length} registros exportados em CSV.`);
         })}>CSV</button>
 
         <button type="button" disabled={busy} onClick={() => run(async () => {
           const entries = await fetchAllForExport();
-          download(`diario-${stamp}.json`, toBackupJson(entries), 'application/json');
+          download(`entrelinhas-${stamp}.json`, toBackupJson(entries), 'application/json');
           setMessage(`${entries.length} registros exportados em JSON (backup).`);
         })}>JSON (backup)</button>
 
