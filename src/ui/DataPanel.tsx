@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { DIMENSIONS } from '../domain/indicators';
 import { fetchAllForExport, restoreEntries, eraseMyData } from '../data/repository';
 import { toCsv, toBackupJson, parseBackup } from '../domain/export';
 import { localDateKey } from '../domain/dates';
@@ -19,6 +20,15 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
   const [busy, setBusy] = useState(false);
   const [eraseText, setEraseText] = useState('');
   const [restorePreview, setRestorePreview] = useState<{ entries: ExportEntry[]; existingDates: string[]; fileName: string } | null>(null);
+  const [reportEntries, setReportEntries] = useState<ExportEntry[] | null>(null);
+
+  useEffect(() => {
+    if (!reportEntries) return;
+    const timer = window.setTimeout(() => window.print(), 250);
+    const clear = () => setReportEntries(null);
+    window.addEventListener('afterprint', clear);
+    return () => { window.clearTimeout(timer); window.removeEventListener('afterprint', clear); };
+  }, [reportEntries]);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true); setMessage('');
@@ -30,6 +40,7 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
   const stamp = localDateKey();
 
   return (
+    <>
     <section className="data-panel">
       <h2>Dados e exportação</h2>
       <div className="row">
@@ -45,8 +56,11 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
           setMessage(`${entries.length} registros exportados em JSON (backup).`);
         })}>JSON (backup)</button>
 
-        <button type="button" disabled={busy} onClick={() => window.print()}>
-          Relatório (imprimir / salvar em PDF)
+        <button type="button" disabled={busy} onClick={() => run(async () => {
+          const entries = await fetchAllForExport();
+          setReportEntries(entries);
+        })}>
+          Relatório estruturado (PDF)
         </button>
       </div>
 
@@ -138,5 +152,39 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
 
       {message && <p className="message">{message}</p>}
     </section>
+    {reportEntries && (
+      <article className="print-report">
+        <header>
+          <h1>Entrelinhas</h1>
+          <p>Relatório de observação longitudinal</p>
+          <p>Gerado em {new Date().toLocaleString('pt-BR')}</p>
+          <p>{reportEntries.length} registros · {reportEntries.length ? `${reportEntries[0].entry_date} a ${reportEntries[reportEntries.length - 1].entry_date}` : 'sem período'}</p>
+        </header>
+        {reportEntries.map(entry => (
+          <section className="print-entry" key={entry.entry_date}>
+            <h2>{new Date(`${entry.entry_date}T12:00:00`).toLocaleDateString('pt-BR', { dateStyle: 'full' })}</h2>
+            <p>Status: {entry.status === 'complete' ? 'Concluído' : 'Rascunho'} · Sono: {entry.sleep_hours === null ? 'não informado' : `${entry.sleep_hours} horas`}</p>
+            {DIMENSIONS.map(dim => (
+              <div className="print-dimension" key={dim.key}>
+                <h3>{dim.label}</h3>
+                <dl>
+                  {dim.indicators.map(ind => (
+                    <div key={ind.key}>
+                      <dt>{ind.label}</dt>
+                      <dd>{entry.scores[ind.key] == null ? 'Não avaliado' : `${entry.scores[ind.key]} / 10`}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ))}
+            {entry.events_context && <p><strong>Acontecimentos e contexto:</strong> {entry.events_context}</p>}
+            {entry.behavior_notes && <p><strong>Observações sobre comportamento:</strong> {entry.behavior_notes}</p>}
+            {entry.sleep_notes && <p><strong>Notas sobre sono:</strong> {entry.sleep_notes}</p>}
+          </section>
+        ))}
+        <footer><small>Este relatório apresenta registros informados pelo usuário. Não constitui diagnóstico ou interpretação clínica.</small></footer>
+      </article>
+    )}
+    </>
   );
 }
