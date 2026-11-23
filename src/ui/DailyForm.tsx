@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DIMENSIONS, type Dimension } from '../domain/indicators';
+import { DIMENSIONS, type Dimension, type Indicator } from '../domain/indicators';
 import { draftSchema, missingForComplete, type DraftFields } from '../domain/schemas';
 import {
   getOrCreateEntry, saveDraft, completeEntry, ConflictError, type LoadedEntry,
@@ -254,8 +254,7 @@ export function DailyForm({ date }: { date: string }) {
       </section>
 
       <p className="scale-guidance">
-        Escala de 0 a 10: 0 significa que a experiência não esteve presente; 10, que esteve muito intensa ou frequente.
-        Nos indicadores de capacidade ou controle, avalie o quanto essa característica esteve presente — não se ela foi boa ou ruim.
+        Use os extremos indicados em cada item como referência. Considere o conjunto do dia, não apenas um momento isolado. Se não conseguir avaliar, deixe o item sem preenchimento.
       </p>
 
       {status === 'complete' && (
@@ -396,7 +395,7 @@ function DimensionSection({
       {dim.indicators.map(ind => (
         <ScoreInput
           key={ind.key}
-          label={ind.label}
+          indicator={ind}
           value={fields.scores[ind.key] ?? null}
           onChange={v => onScore(ind.key, v)}
         />
@@ -406,12 +405,13 @@ function DimensionSection({
 }
 
 function ScoreInput({
-  label, value, onChange,
+  indicator, value, onChange,
 }: {
-  label: string;
+  indicator: Indicator;
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
+  const { label, scaleLow, scaleHigh, scaleKind } = indicator;
   return (
     <div className="score">
       <div className="score-head">
@@ -440,6 +440,12 @@ function ScoreInput({
           </button>
         )}
       </div>
+      <div className="scale-endpoints" aria-hidden="true">
+        <span>0 · {scaleLow}</span>
+        <span>5</span>
+        <span>10 · {scaleHigh}</span>
+      </div>
+      <span className="sr-only">Tipo de escala: {scaleKind}.</span>
     </div>
   );
 }
