@@ -40,6 +40,17 @@ export function DailyForm({ date }: { date: string }) {
   const [offlineConflict, setOfflineConflict] = useState(false);
   const [step, setStep] = useState(0);
   const [showMissing, setShowMissing] = useState(false);
+  const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const previousStepRef = useRef(step);
+
+  // Ao avançar, voltar ou escolher uma etapa, reposiciona a leitura no novo conteúdo.
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    stepHeadingRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    stepHeadingRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
@@ -303,7 +314,7 @@ export function DailyForm({ date }: { date: string }) {
           })}
         </nav>
         <div className="step-heading">
-          <h3>{FORM_STEPS[step].title}</h3>
+          <h3 ref={stepHeadingRef} tabIndex={-1}>{FORM_STEPS[step].title}</h3>
           <p>{FORM_STEPS[step].description}</p>
         </div>
       </section>
