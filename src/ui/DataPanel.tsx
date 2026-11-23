@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { fetchAllForExport, restoreEntries, eraseMyData } from '../data/repository';
 import { toCsv, toBackupJson, parseBackup } from '../domain/export';
 import { localDateKey } from '../domain/dates';
+import type { ExportEntry } from '../domain/schemas';
 
 function download(name: string, content: string, type: string) {
   const blob = new Blob([content], { type });
@@ -17,6 +18,7 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [eraseText, setEraseText] = useState('');
+  const [restorePreview, setRestorePreview] = useState<{ entries: ExportEntry[]; existingDates: string[]; fileName: string } | null>(null);
 
   async function run(fn: () => Promise<void>) {
     setBusy(true); setMessage('');
@@ -66,15 +68,49 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
           }
           void run(async () => {
             const entries = parseBackup(await file.text());
-            const r = await restoreEntries(entries);
-            setMessage(
-              `Importados: ${r.imported}. Ignorados (já existiam): ${r.skipped.length}` +
-              (r.skipped.length ? ` (${r.skipped.slice(0, 5).join(', ')}${r.skipped.length > 5 ? '…' : ''})` : ''),
-            );
+            const current = await fetchAllForExport();
+            const existing = new Set(current.map(entry => entry.entry_date));
+            const existingDates = entries
+              .filter(entry => existing.has(entry.entry_date))
+              .map(entry => entry.entry_date);
+            setRestorePreview({ entries, existingDates, fileName: file.name });
+            setMessage('');
           });
           e.target.value = '';
         }}
       />
+      {restorePreview && (
+        <section className="restore-preview" aria-live="polite">
+          <h3>Prévia do backup</h3>
+          <p><strong>Arquivo:</strong> {restorePreview.fileName}</p>
+          <p><strong>Registros no arquivo:</strong> {restorePreview.entries.length}</p>
+          {restorePreview.entries.length > 0 && (
+            <p><strong>Período:</strong> {restorePreview.entries[0].entry_date} a {restorePreview.entries[restorePreview.entries.length - 1].entry_date}</p>
+          )}
+          <p><strong>Datas que já existem e serão preservadas:</strong> {restorePreview.existingDates.length}</p>
+          {restorePreview.existingDates.length > 0 && (
+            <p className="muted">Não haverá sobrescrita. Datas: {restorePreview.existingDates.slice(0, 8).join(', ')}{restorePreview.existingDates.length > 8 ? '…' : ''}</p>
+          )}
+          <p className="muted">A restauração é enviada como uma única operação. Se houver um registro inválido, o banco rejeita o lote inteiro.</p>
+          <div className="row">
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || restorePreview.entries.length === 0}
+              onClick={() => run(async () => {
+                const result = await restoreEntries(restorePreview.entries);
+                setMessage(`Importados: ${result.imported}. Ignorados (já existiam): ${result.skipped.length}.`);
+                setRestorePreview(null);
+              })}
+            >
+              Confirmar restauração
+            </button>
+            <button type="button" className="secondary" disabled={busy} onClick={() => setRestorePreview(null)}>
+              Cancelar
+            </button>
+          </div>
+        </section>
+      )}
 
       <h2>Apagar meus dados</h2>
       <p className="muted">
