@@ -256,3 +256,103 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   }
   .step-nav-label { font-size: 0.68rem; }
 }
+
+
+/* Controles de escala — estado neutro, leitura e área de interação */
+.score {
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.score-legend {
+  width: 100%;
+  padding: 0;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+.score-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.score-kind {
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+.score-value {
+  min-width: 2.2rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.score-value.unset {
+  min-width: auto;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+.score-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.score-controls input[type='range'] {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+  touch-action: pan-y;
+}
+.score-controls input[type='range']::-webkit-slider-thumb {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.score-controls input[type='range']::-moz-range-thumb {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.scale-endpoints {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  padding: 0 0.1rem;
+}
+.scale-midpoint { text-align: center; }
+.score-unset-hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+.clear-score {
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+}
+.score-unset { background: color-mix(in srgb, var(--surface) 65%, transparent); }
+@media (max-width: 480px) {
+  .score { padding: 1rem 0.15rem; }
+  .score-legend { font-size: 0.94rem; }
+  .score-controls { gap: 0.4rem; }
+  .score-controls input[type='range'] { min-height: 3rem; }
+}
