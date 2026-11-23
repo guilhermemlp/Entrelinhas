@@ -5,7 +5,7 @@ import {
 } from './analysis';
 import { addDays, daysBetween, monthRange, localDateKey } from './dates';
 import { ALL_INDICATORS, DIMENSIONS, INDICATOR_KEYS } from './indicators';
-import { draftSchema, missingForComplete, exportEntrySchema, type DraftFields } from './schemas';
+import { draftSchema, missingForComplete, exportEntrySchema, backupSchema, type DraftFields } from './schemas';
 
 const rec = (date: string, status: DayRecord['status'], v: number | null = null): DayRecord => ({
   date, status, sleep_hours: null,
@@ -170,5 +170,45 @@ describe('validação de rascunho e conclusão', () => {
       sleep_notes: '', events_context: 'x', behavior_notes: 'y', scores: emptyScores,
     });
     expect(r.success).toBe(false);
+  });
+});
+
+
+describe('validação de backup', () => {
+  const scores = Object.fromEntries(INDICATOR_KEYS.map(k => [k, null]));
+  const entry = {
+    entry_date: '2026-05-01',
+    status: 'draft' as const,
+    sleep_hours: null,
+    sleep_notes: '',
+    events_context: '',
+    behavior_notes: '',
+    scores,
+  };
+
+  it('rejeita datas duplicadas no mesmo backup', () => {
+    const result = backupSchema.safeParse({
+      schema_version: 1,
+      entries: [entry, entry],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejeita backup com indicador ausente', () => {
+    const incomplete = { ...entry, scores: { ...scores } };
+    delete (incomplete.scores as Record<string, number | null>).tristeza;
+    const result = backupSchema.safeParse({
+      schema_version: 1,
+      entries: [incomplete],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('aceita backup com os 45 indicadores e datas únicas', () => {
+    const result = backupSchema.safeParse({
+      schema_version: 1,
+      entries: [entry, { ...entry, entry_date: '2026-05-02' }],
+    });
+    expect(result.success).toBe(true);
   });
 });
