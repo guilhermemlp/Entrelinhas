@@ -356,3 +356,114 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   .score-controls { gap: 0.4rem; }
   .score-controls input[type='range'] { min-height: 3rem; }
 }
+
+
+/* Análises — primeiro a cobertura, depois a exploração estatística */
+.analysis-overview {
+  margin: 0.85rem 0 1rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.analysis-overview-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.analysis-overview-heading h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1.05rem;
+}
+.coverage-value {
+  color: var(--accent);
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+}
+.coverage-track {
+  height: 0.55rem;
+  overflow: hidden;
+  margin: 0.85rem 0 0.65rem;
+  border-radius: 999px;
+  background: var(--line);
+}
+.coverage-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ok);
+  transition: width 180ms ease;
+}
+.coverage-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.coverage-breakdown span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.coverage-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--line);
+}
+.coverage-dot.complete { background: var(--ok); }
+.coverage-dot.draft { background: #c58b4b; }
+.coverage-dot.missing { background: #c8ced6; }
+.analysis-method-note {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.analysis-details {
+  margin: 0.9rem 0 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.analysis-details summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.analysis-details .stats {
+  padding: 0 0.65rem 0.7rem;
+}
+.analysis-details .stat {
+  background: var(--bg);
+}
+.analysis-section-title {
+  margin: 1.3rem 0 0.35rem;
+  font-size: 1rem;
+}
+.analysis .controls label {
+  margin: 0.35rem 0;
+}
+.analysis .chart {
+  min-width: 0;
+  overflow: hidden;
+}
+@media (max-width: 480px) {
+  .analysis-overview { padding: 0.85rem; }
+  .coverage-breakdown { gap: 0.45rem 0.7rem; }
+  .analysis-details summary { flex-wrap: wrap; }
+}
