@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Diário',
-        short_name: 'Diário',
-        description: 'Registro diário e análise longitudinal',
+        name: 'Entrelinhas',
+        short_name: 'Entrelinhas',
+        description: 'Um espaço para observar padrões ao longo do tempo.',
         theme_color: '#f7f8fa',
         background_color: '#f7f8fa',
         display: 'standalone',
