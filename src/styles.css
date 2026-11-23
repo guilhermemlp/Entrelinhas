@@ -585,3 +585,15 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   .step-actions button { min-height: 2.9rem; }
   .score-options { gap: .35rem; }
 }
+
+
+.calendar-summary { min-height: 4.2rem; margin: .5rem 0 .75rem; }
+.calendar-summary .coverage { margin: .25rem 0; font-size: .9rem; font-weight: 600; }
+.calendar-summary .muted { margin: .25rem 0; }
+.cal-day { min-width: 0; }
+.cal-day:focus-visible { position: relative; z-index: 1; }
+@media (max-width: 420px) {
+  .cal-grid { gap: 4px; }
+  .cal-day { border-radius: 7px; font-size: .85rem; }
+  .cal-wd { font-size: .72rem; }
+}
