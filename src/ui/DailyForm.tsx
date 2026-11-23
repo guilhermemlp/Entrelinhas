@@ -35,11 +35,13 @@ export function DailyForm({ date }: { date: string }) {
   const fieldsRef = useRef<DraftFields | null>(null);
   const saveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
   const revisionRef = useRef(0);
+  const offlineConflictRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     setEntry(null); setFields(null); setDirty(false);
     setMessage(''); setLoadError(''); setSaveState('idle'); setOfflineConflict(false);
+    offlineConflictRef.current = false;
     entryRef.current = null; fieldsRef.current = null;
     revisionRef.current = 0;
     saveQueueRef.current = Promise.resolve(true);
@@ -62,6 +64,7 @@ export function DailyForm({ date }: { date: string }) {
             setMessage('Rascunho local recuperado. Sincronizando com o servidor…');
           } else {
             setOfflineConflict(true);
+            offlineConflictRef.current = true;
             setSaveState('error');
             setMessage('Há uma cópia local e o registro do servidor foi alterado em outra sessão. A cópia local foi preservada; não será sobrescrita automaticamente.');
           }
@@ -75,7 +78,7 @@ export function DailyForm({ date }: { date: string }) {
     const run = async (): Promise<boolean> => {
       const e = entryRef.current;
       const f = fieldsRef.current;
-      if (!e || !f || offlineConflict) return false;
+      if (!e || !f || offlineConflictRef.current) return false;
       const revision = revisionRef.current;
       const parsed = draftSchema.safeParse(f);
       if (!parsed.success) {
@@ -84,16 +87,17 @@ export function DailyForm({ date }: { date: string }) {
         return false;
       }
       setSaveState('saving');
+      let localStored = false;
+      try { await saveOfflineDraft(e.id, e.updated_at, f); localStored = true; } catch { /* sincronização online ainda pode funcionar */ }
       try {
-        await saveOfflineDraft(e.id, e.updated_at, f);
         const updatedAt = await saveDraft(e, f);
         const updated = { ...e, updated_at: updatedAt, scores: f.scores };
         entryRef.current = updated;
         setEntry(updated);
         if (revisionRef.current === revision) {
-          await deleteOfflineDraft(e.id);
+          await deleteOfflineDraft(e.id).catch(() => undefined);
         } else if (fieldsRef.current) {
-          await saveOfflineDraft(e.id, updatedAt, fieldsRef.current);
+          await saveOfflineDraft(e.id, updatedAt, fieldsRef.current).catch(() => undefined);
         }
         setSaveState('saved'); setMessage('');
         return true;
@@ -101,7 +105,9 @@ export function DailyForm({ date }: { date: string }) {
         setSaveState('error');
         setMessage(err instanceof ConflictError
           ? err.message
-          : 'Não foi possível sincronizar. Uma cópia local foi guardada neste navegador; tente novamente quando a conexão voltar.');
+          : localStored
+            ? 'Não foi possível sincronizar. Uma cópia local foi guardada neste navegador; tente novamente quando a conexão voltar.'
+            : 'Não foi possível sincronizar nem guardar uma cópia local neste navegador. Mantenha esta tela aberta e tente novamente.');
         return false;
       }
     };
@@ -249,7 +255,8 @@ export function DailyForm({ date }: { date: string }) {
               };
               entryRef.current = e; fieldsRef.current = fresh;
               setEntry(e); setFields(fresh); setStatus(e.status);
-              setOfflineConflict(false); setDirty(false); setSaveState('saved'); setMessage('');
+              setOfflineConflict(false); offlineConflictRef.current = false;
+              setDirty(false); setSaveState('saved'); setMessage('');
             }).catch(err => setMessage(err instanceof Error ? err.message : 'Falha ao recarregar.'));
           }}>
             Descartar cópia local e recarregar
