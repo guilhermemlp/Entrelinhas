@@ -27,15 +27,20 @@ export function Analysis() {
   const [compare, setCompare] = useState<string>('');
   const [recordsMap, setRecordsMap] = useState<Map<string, DayRecord>>(new Map());
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const from = addDays(today, -(rangeDays - 1));
   const to = today;
 
   useEffect(() => {
+    let active = true;
     setError('');
+    setLoading(true);
     listDays(from, to)
-      .then(r => setRecordsMap(r.records))
-      .catch(e => setError(e.message));
+      .then(r => { if (active) setRecordsMap(r.records); })
+      .catch(e => { if (active) setError(e instanceof Error ? e.message : 'Falha ao carregar os registros.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [from, to]);
 
   const records: DayRecord[] = useMemo(
@@ -44,6 +49,7 @@ export function Analysis() {
   );
 
   const cov = coverage(records);
+  const coveragePct = cov.days ? Math.round((cov.complete + cov.draft) / cov.days * 100) : 0;
   const values = series(records, indicator);
   const sum = summarize(values);
   const week = weekComparison(values);
@@ -99,13 +105,22 @@ export function Analysis() {
         </label>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
 
       <p className="base">
         <strong>Base do período:</strong> {cov.days} dias · {cov.complete} concluídos ·{' '}
-        {cov.draft} rascunhos · {cov.missing} sem registro. Os valores abaixo consideram apenas
-        dias com valor preenchido (n).
+        {cov.draft} rascunhos · {cov.missing} sem registro.
+        Cobertura de registros: {coveragePct}%. Os indicadores consideram somente valores
+        preenchidos; cada estatística informa seu próprio n.
       </p>
+
+      {loading && <p className="muted" role="status">Carregando registros do período…</p>}
+      {!loading && !error && sum.n === 0 && (
+        <p className="notice">Ainda não há valores para este indicador no período. Experimente ampliar o intervalo ou escolha outro indicador.</p>
+      )}
+      {!loading && !error && sum.n > 0 && sum.n < 7 && (
+        <p className="muted" role="status">Amostra pequena: há {sum.n} dia(s) com valor. Tendências e comparações podem ser instáveis.</p>
+      )}
 
       <div className="stats">
         <Stat label="n (dias com valor)" value={String(sum.n)} />
