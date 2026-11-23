@@ -197,7 +197,7 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
 /* Etapas do registro: navegação direta e progresso por seção */
 .step-nav {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.35rem;
   margin-top: 0.8rem;
 }
@@ -466,4 +466,31 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   .analysis-overview { padding: 0.85rem; }
   .coverage-breakdown { gap: 0.45rem 0.7rem; }
   .analysis-details summary { flex-wrap: wrap; }
+}
+
+
+/* Navegação e identidade do Entrelinhas */
+.brand { color: var(--text); font-size: 1rem; letter-spacing: 0.01em; }
+.tab { line-height: 1.25; white-space: normal; }
+.tabbar .tab:last-child { font-size: 0.72rem; }
+.analysis-header { margin-bottom: 0.9rem; }
+.analysis-header p { margin: 0.25rem 0 0; line-height: 1.45; }
+
+/* Pendências de conclusão e prévia de restauração */
+.missing-summary, .restore-preview {
+  margin: 0.9rem 0;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.missing-summary { border-left: 3px solid var(--warn); }
+.missing-summary h3, .restore-preview h3 { margin: 0 0 0.45rem; }
+.missing-summary p, .restore-preview p { margin: 0.35rem 0; line-height: 1.45; }
+.missing-summary ul { margin: 0.55rem 0 0; padding-left: 1.25rem; columns: 2; }
+.missing-summary li { break-inside: avoid; margin: 0.18rem 0; font-size: 0.86rem; }
+.restore-preview { border-left: 3px solid var(--accent); }
+@media (max-width: 540px) {
+  .missing-summary ul { columns: 1; }
+  .tabbar .tab:last-child { font-size: 0.66rem; }
 }
