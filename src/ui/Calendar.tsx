@@ -60,11 +60,16 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
         <button type="button" onClick={() => shift(1)} aria-label="Próximo mês">›</button>
       </div>
 
-      <p className="coverage">
-        {c.complete} concluídos · {c.draft} rascunhos · {c.missing} sem registro
-      </p>
       {loading && <p className="muted" role="status">Carregando calendário…</p>}
       {error && <p className="error" role="alert">{error}</p>}
+      {!loading && !error && (
+        <div className="calendar-summary" aria-live="polite">
+          <p className="coverage">
+            {c.complete} concluídos · {c.draft} rascunhos · {c.missing} sem registro
+          </p>
+          <p className="muted small">Selecione um dia para consultar ou revisar o registro.</p>
+        </div>
+      )}
 
       <div className="cal-grid">
         {WEEKDAYS.map((w, i) => <div key={i} className="cal-wd">{w}</div>)}
