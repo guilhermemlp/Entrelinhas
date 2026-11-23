@@ -200,6 +200,13 @@ export function DailyForm({ date }: { date: string }) {
 
       <footer className="daily-footer">
         {message && <p className="message">{message}</p>}
+        {saveState === 'error' && dirty && (
+          <button type="button" className="link" onClick={() => {
+            void persist().then(ok => { if (ok) setDirty(false); });
+          }}>
+            Tentar salvar novamente
+          </button>
+        )}
         <button
           type="button"
           className="primary"
