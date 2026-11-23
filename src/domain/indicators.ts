@@ -1,7 +1,9 @@
 // Catálogo de indicadores. Espelha a tabela indicator_def do banco.
 // Qualquer alteração aqui exige migração correspondente.
-// Todos os indicadores são escalas de INTENSIDADE 0–10 (0 = ausente, 10 = máxima).
-// Não há indicadores "bons" ou "ruins": a leitura é feita na análise.
+// As chaves e os valores numéricos são estáveis para preservar o histórico.
+// Cada indicador explicita seus próprios extremos; não se deve presumir uma polaridade única.
+
+export type ScaleKind = 'intensidade' | 'capacidade' | 'qualidade' | 'frequencia';
 
 export type DimensionKey =
   | 'mood' | 'energy' | 'cognition' | 'anxiety'
@@ -10,6 +12,9 @@ export type DimensionKey =
 export interface Indicator {
   key: string;
   label: string;
+  scaleKind: ScaleKind;
+  scaleLow: string;
+  scaleHigh: string;
 }
 
 export interface Dimension {
