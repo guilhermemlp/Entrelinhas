@@ -24,6 +24,7 @@ src/domain/schemas.ts              validação (rascunho, conclusão, backup)
 src/domain/analysis.ts             análise descritiva + correlação com gate
 src/domain/export.ts               CSV (com proteção contra injeção) e backup JSON
 src/domain/domain.test.ts          testes da lógica de domínio
+supabase/tests/data_integrity.test.sql  testes SQL de RLS, salvamento, conclusão, auditoria e restauração
 src/data/repository.ts             acesso ao Supabase com controle de concorrência
 src/ui/                            formulário, calendário, análise, dados
 ```
@@ -67,7 +68,24 @@ npm test           # testes de domínio
 npm run build      # checagem de tipos + build de produção
 ```
 
-### 5. Deploy gratuito (Vercel)
+### 5. Testes de integração do banco (ambiente local)
+
+Instale a [Supabase CLI](https://supabase.com/docs/guides/cli) e o Docker. Os testes usam
+um banco local descartável; não aponte esse fluxo para o projeto com seus dados reais.
+
+```bash
+supabase start
+supabase db reset       # recria o banco local e aplica as migrações em ordem
+supabase test db        # executa supabase/tests/*.test.sql
+```
+
+A suíte `data_integrity.test.sql` usa dois usuários fictícios e verifica isolamento por RLS,
+salvamento transacional, conclusão protegida, bloqueio de alteração direta de status,
+registro de revisões, bloqueio de auditoria forjada e validação da restauração. O teste
+precisa passar no ambiente local antes de considerar essas garantias verificadas.
+
+
+### 6. Deploy gratuito (Vercel)
 
 Importe o repositório na Vercel, defina as duas variáveis `VITE_*` e faça o deploy.
 Nenhum servidor precisa ficar ligado no seu computador.
@@ -116,12 +134,10 @@ Honestidade sobre o que **não** está pronto:
    pelo navegador. Se a versão do servidor mudar em outra sessão, a cópia local é preservada
    e exige decisão manual; não há resolução automática de conflitos. Ainda é necessário
    estar online para carregar/criar o registro inicial.
-2. **Testes de RLS:** as políticas e permissões foram reforçadas, mas ainda precisam ser
-   verificadas contra um Supabase local ou projeto de teste com dois usuários distintos.
-   Não declare a segurança multiusuário validada até esse teste passar.
-3. **Testes da conclusão e restauração no banco:** as funções SQL validam as regras e a
-   restauração é transacional, mas ainda falta executar testes de integração contra um
-   Supabase local (`supabase start`).
+2. **Testes de banco adicionados, ainda não executados:** a suíte `supabase/tests/data_integrity.test.sql`
+   cobre RLS, salvamento, conclusão, auditoria e restauração com dois usuários fictícios.
+   Ela ainda precisa ser executada em um Supabase local; não declare a segurança multiusuário
+   validada até os testes passarem.
 4. **Lista de indicadores duplicada:** o catálogo existe no SQL e no TypeScript. Qualquer
    mudança exige alterar os dois. Um teste de integração deveria comparar ambos.
 5. **Plano gratuito do Supabase:** projetos inativos por um período podem ser pausados, e
@@ -136,6 +152,6 @@ Honestidade sobre o que **não** está pronto:
 ## Próximos passos sugeridos
 
 - Buffer offline com IndexedDB e sincronização ao reconectar.
-- Teste de integração do banco (RLS, unicidade, conclusão, revisões) com `supabase start`.
+- Executar e ampliar os testes de integração do banco com `supabase start`.
 - Autenticação com segundo fator (TOTP) no Supabase, já que os dados são sensíveis.
 - Exportação de relatório mensal como arquivo, não só impressão.
