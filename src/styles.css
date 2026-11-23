@@ -494,3 +494,41 @@ button.secondary { background: var(--surface); color: var(--text); border: 1px s
   .missing-summary ul { columns: 1; }
   .tabbar .tab:last-child { font-size: 0.66rem; }
 }
+
+
+/* Visão geral e revisão do registro */
+.overview-step, .review-summary {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.overview-count { display: flex; align-items: baseline; gap: .55rem; flex-wrap: wrap; }
+.overview-count strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.overview-count span { color: var(--muted); font-size: .85rem; }
+.overview-dimensions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; margin: .85rem 0; }
+.overview-dimension {
+  display: grid; grid-template-columns: 1fr auto; gap: .4rem;
+  padding: .7rem; text-align: left; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 9px;
+}
+.overview-dimension strong { font-variant-numeric: tabular-nums; }
+.overview-mini-track { grid-column: 1 / -1; height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.overview-mini-track i { display: block; height: 100%; background: var(--ok); }
+.score-options { display: grid; grid-template-columns: repeat(11,minmax(0,1fr)); gap: .3rem; margin: .55rem 0; }
+.score-option {
+  min-width: 0; min-height: 2.65rem; padding: .25rem 0;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.score-option.selected { color: white; background: var(--accent); border-color: var(--accent); font-weight: 700; }
+.review-summary h3 { margin-top: 0; }
+.review-dimensions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .35rem .75rem; }
+.review-dimensions button { text-align: left; }
+@media (max-width: 420px) {
+  .overview-dimensions, .review-dimensions { grid-template-columns: 1fr; }
+  .score-options { gap: .18rem; }
+  .score-option { min-height: 2.45rem; border-radius: 6px; font-size: .86rem; }
+}
