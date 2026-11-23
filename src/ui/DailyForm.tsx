@@ -11,7 +11,8 @@ import {
 const DEBOUNCE_MS = 800;
 
 const FORM_STEPS = [
-  { title: 'Humor e energia', description: 'Como estiveram seu humor, disposição e nível de ativação.', dimensions: ['mood', 'energy'] },
+  { title: 'Humor', description: 'Observe as emoções predominantes e a estabilidade emocional ao longo do dia.', dimensions: ['mood'] },
+  { title: 'Energia e ativação', description: 'Registre disposição, agitação, hiperatividade e necessidade de estímulos.', dimensions: ['energy'] },
   { title: 'Cognição e ansiedade', description: 'Observe pensamentos, atenção, preocupações e tensão.', dimensions: ['cognition', 'anxiety'] },
   { title: 'Impulsividade e sono', description: 'Registre impulsos, comportamentos repetitivos e recuperação.', dimensions: ['impulsivity', 'sleep'] },
   { title: 'Comportamento e contexto', description: 'Observe interações, atividades e acontecimentos do dia.', dimensions: ['social', 'context'] },
@@ -38,6 +39,7 @@ export function DailyForm({ date }: { date: string }) {
   const [loadError, setLoadError] = useState('');
   const [offlineConflict, setOfflineConflict] = useState(false);
   const [step, setStep] = useState(0);
+  const [showMissing, setShowMissing] = useState(false);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
@@ -185,6 +187,7 @@ export function DailyForm({ date }: { date: string }) {
     if (!f || !entryRef.current || offlineConflict) return;
     const missing = missingForComplete(f);
     if (missing.length > 0) {
+      setShowMissing(true);
       const firstMissingIndicator = DIMENSIONS
         .flatMap(dim => dim.indicators.map(ind => ({ dimension: dim.key, key: ind.key })))
         .find(item => f.scores[item.key] == null);
@@ -202,6 +205,7 @@ export function DailyForm({ date }: { date: string }) {
       setMessage(`Ainda faltam ${missing.length} campos para concluir. Voltei à primeira etapa com pendências.`);
       return;
     }
+    setShowMissing(false);
     setSaveState('saving');
     try {
       let saved = false;
@@ -223,6 +227,7 @@ export function DailyForm({ date }: { date: string }) {
   if (loadError) return <p className="error">Erro ao carregar: {loadError}</p>;
   if (!fields || !entry) return <p>Carregando…</p>;
 
+  const missingFields = missingForComplete(fields);
   const filled = countFilled(fields.scores);
   const total = Object.keys(fields.scores).length;
   const requiredNarrative = Number(fields.events_context.trim().length > 0)
@@ -295,6 +300,16 @@ export function DailyForm({ date }: { date: string }) {
           <p>{FORM_STEPS[step].description}</p>
         </div>
       </section>
+
+      {showMissing && missingFields.length > 0 && (
+        <section className="missing-summary" role="alert" aria-live="polite">
+          <h3>O registro ainda não pode ser concluído</h3>
+          <p>Faltam {missingFields.length} campos obrigatórios. A lista abaixo mostra exatamente o que precisa ser preenchido:</p>
+          <ul>
+            {missingFields.map(item => <li key={item}>{item}</li>)}
+          </ul>
+        </section>
+      )}
 
       <p className="scale-guidance">
         Use os extremos indicados em cada item como referência. Considere o conjunto do dia, não apenas um momento isolado. Se não conseguir avaliar, deixe o item sem preenchimento.
