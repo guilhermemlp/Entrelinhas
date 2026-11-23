@@ -58,7 +58,7 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
 
         <button type="button" disabled={busy} onClick={() => run(async () => {
           const entries = await fetchAllForExport();
-          setReportEntries(entries);
+          setReportEntries([...entries].sort((a, b) => a.entry_date.localeCompare(b.entry_date)));
         })}>
           Relatório estruturado (PDF)
         </button>
