@@ -225,6 +225,31 @@ export function DailyForm({ date }: { date: string }) {
 
   const filled = countFilled(fields.scores);
   const total = Object.keys(fields.scores).length;
+  const requiredNarrative = Number(fields.events_context.trim().length > 0)
+    + Number(fields.behavior_notes.trim().length > 0);
+  const completedRequired = filled + Number(fields.sleep_hours !== null) + requiredNarrative;
+  const totalRequired = total + 3;
+  const stepProgress = FORM_STEPS.map(item => {
+    if (item.dimensions.length === 0) {
+      return {
+        filled: requiredNarrative,
+        total: 2,
+        complete: requiredNarrative === 2,
+      };
+    }
+    const indicators = DIMENSIONS
+      .filter(dim => (item.dimensions as readonly string[]).includes(dim.key))
+      .flatMap(dim => dim.indicators);
+    const scoreCount = indicators.filter(ind => fields.scores[ind.key] !== null).length;
+    const includesSleep = (item.dimensions as readonly string[]).includes('sleep');
+    const sleepCount = includesSleep && fields.sleep_hours !== null ? 1 : 0;
+    const requiredCount = indicators.length + (includesSleep ? 1 : 0);
+    return {
+      filled: scoreCount + sleepCount,
+      total: requiredCount,
+      complete: scoreCount + sleepCount === requiredCount,
+    };
+  });
 
   return (
     <form className="daily" onSubmit={e => e.preventDefault()}>
@@ -242,11 +267,29 @@ export function DailyForm({ date }: { date: string }) {
       <section className="form-progress" aria-label="Progresso do registro">
         <div className="form-progress-meta">
           <span>Etapa {step + 1} de {FORM_STEPS.length}</span>
-          <strong>{filled} de {total} indicadores preenchidos</strong>
+          <strong>{completedRequired} de {totalRequired} campos obrigatórios preenchidos</strong>
         </div>
-        <div className="progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={FORM_STEPS.length} aria-valuenow={step + 1}>
-          <span style={{ width: `${((step + 1) / FORM_STEPS.length) * 100}%` }} />
+        <div className="progress-track" role="progressbar" aria-label="Campos obrigatórios preenchidos" aria-valuemin={0} aria-valuemax={totalRequired} aria-valuenow={completedRequired}>
+          <span style={{ width: `${(completedRequired / totalRequired) * 100}%` }} />
         </div>
+        <nav className="step-nav" aria-label="Etapas do registro">
+          {FORM_STEPS.map((item, index) => {
+            const progress = stepProgress[index];
+            return (
+              <button
+                key={item.title}
+                type="button"
+                className={index === step ? 'step-nav-item active' : 'step-nav-item'}
+                aria-current={index === step ? 'step' : undefined}
+                aria-label={`Etapa ${index + 1}: ${item.title}. ${progress.filled} de ${progress.total} campos preenchidos`}
+                onClick={() => setStep(index)}
+              >
+                <span className="step-nav-number">{progress.complete ? '✓' : index + 1}</span>
+                <span className="step-nav-label">{item.title}</span>
+              </button>
+            );
+          })}
+        </nav>
         <div className="step-heading">
           <h3>{FORM_STEPS[step].title}</h3>
           <p>{FORM_STEPS[step].description}</p>
