@@ -67,29 +67,23 @@ export async function getOrCreateEntry(date: string): Promise<LoadedEntry> {
 // Salva os campos e as pontuações. Retorna o novo updated_at, que o chamador
 // deve guardar para o próximo salvamento (controle otimista).
 export async function saveDraft(entry: LoadedEntry, draft: DraftFields): Promise<string> {
-  const { data, error } = await supabase
-    .from('daily_entry')
-    .update({
+  const { data, error } = await supabase.rpc('save_entry_draft', {
+    p_entry_id: entry.id,
+    p_expected_updated_at: entry.updated_at,
+    p_payload: {
       sleep_hours: draft.sleep_hours,
       sleep_notes: draft.sleep_notes,
       events_context: draft.events_context,
       behavior_notes: draft.behavior_notes,
-    })
-    .eq('id', entry.id)
-    .eq('updated_at', entry.updated_at)
-    .select('updated_at');
-  if (error) throw error;
-  if (!data || data.length === 0) throw new ConflictError();
-
-  const rows = Object.entries(draft.scores).map(([indicator, score]) => ({
-    entry_id: entry.id, indicator, score,
-  }));
-  if (rows.length > 0) {
-    const r = await supabase
-      .from('indicator_score').upsert(rows, { onConflict: 'entry_id,indicator' });
-    if (r.error) throw r.error;
+      scores: draft.scores,
+    },
+  });
+  if (error) {
+    if (error.message.toLowerCase().includes('conflito')) throw new ConflictError();
+    throw error;
   }
-  return data[0].updated_at;
+  if (typeof data !== 'string') throw new Error('O banco não confirmou o salvamento.');
+  return data;
 }
 
 // Conclusão: a regra é validada no banco (função complete_entry).
