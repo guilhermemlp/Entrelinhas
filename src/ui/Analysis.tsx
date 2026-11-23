@@ -56,7 +56,12 @@ export function Analysis() {
   const trend = sum.n >= 7 ? slope(values) : null;
   const ma = movingAverage(values, 7);
 
-  const chartLabel = (date: string) => rangeDays > 90 ? date.slice(2) : date.slice(5);
+  const chartLabel = (date: string) => {
+    const parsed = new Date(`${date}T12:00:00`);
+    return rangeDays > 90
+      ? parsed.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+      : parsed.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  };
   const chartData = records.map((r, i) => ({
     date: chartLabel(r.date),
     value: values[i],
@@ -64,6 +69,7 @@ export function Analysis() {
     avg7: ma[i],
   }));
   const sleep = sleepSeries(records);
+  const sleepSummary = summarize(sleep);
   const sleepData = records.map((r, i) => ({ date: chartLabel(r.date), sleep: sleep[i] }));
 
   const corr = compare
@@ -72,6 +78,10 @@ export function Analysis() {
 
   return (
     <section className="analysis">
+      <header className="analysis-header">
+        <h2>Análises</h2>
+        <p className="muted">Explore seus registros ao longo do tempo, considerando a quantidade de observações disponíveis.</p>
+      </header>
       <div className="controls">
         <div className="seg">
           {RANGES.map(r => (
@@ -158,6 +168,7 @@ export function Analysis() {
         </div>
       </details>
 
+      {sum.n > 0 && <>
       <h3 className="analysis-section-title">Evolução de {INDICATOR_LABEL[indicator]}</h3>
       <p className="muted small">Cada ponto representa um valor registrado. Espaços sem ponto indicam dias sem avaliação.</p>
       <div className="chart">
@@ -177,18 +188,19 @@ export function Analysis() {
         </ResponsiveContainer>
       </div>
 
+      </>}
       <h3 className="analysis-section-title">Sono (horas)</h3>
-      <div className="chart">
+      {sleepSummary.n > 0 ? <div className="chart">
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={sleepData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" minTickGap={16} />
-            <YAxis domain={[0, 'dataMax']} />
+            <YAxis domain={[0, 24]} ticks={[0, 4, 8, 12, 16, 20, 24]} />
             <Tooltip />
             <Line type="monotone" dataKey="sleep" name="Horas dormidas" stroke="#4f7d5b" connectNulls={false} dot />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </div> : <p className="muted">Não há valores de horas de sono neste período.</p>}
 
       <h3 className="analysis-section-title">Correlação exploratória</h3>
       {!CORRELATIONS_ENABLED && (
