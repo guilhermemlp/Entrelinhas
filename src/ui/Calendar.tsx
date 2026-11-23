@@ -19,13 +19,18 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
   });
   const [records, setRecords] = useState<Map<string, DayRecord>>(new Map());
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const { from, to } = monthRange(ym.y, ym.m0);
 
   useEffect(() => {
+    let active = true;
     setError('');
+    setLoading(true);
     listDays(from, to)
-      .then(r => setRecords(r.records))
-      .catch(e => setError(e.message));
+      .then(r => { if (active) setRecords(r.records); })
+      .catch(e => { if (active) setError(e instanceof Error ? e.message : 'Falha ao carregar o calendário.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [from, to]);
 
   const firstWeekday = new Date(Date.UTC(ym.y, ym.m0, 1)).getUTCDay();
@@ -58,7 +63,8 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
       <p className="coverage">
         {c.complete} concluídos · {c.draft} rascunhos · {c.missing} sem registro
       </p>
-      {error && <p className="error">{error}</p>}
+      {loading && <p className="muted" role="status">Carregando calendário…</p>}
+      {error && <p className="error" role="alert">{error}</p>}
 
       <div className="cal-grid">
         {WEEKDAYS.map((w, i) => <div key={i} className="cal-wd">{w}</div>)}
@@ -72,8 +78,9 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
             <button
               type="button"
               key={date}
-              disabled={future}
+              disabled={future || loading}
               className={`cal-day ${st} ${date === today ? 'today' : ''}`}
+              aria-current={date === today ? 'date' : undefined}
               onClick={() => onSelect(date)}
               aria-label={`${date}: ${st === 'complete' ? 'concluído' : st === 'draft' ? 'rascunho' : 'sem registro'}`}
             >
