@@ -9,6 +9,12 @@ import { DataPanel } from './ui/DataPanel';
 
 type Tab = 'registro' | 'calendario' | 'analise' | 'dados';
 
+// Em produção, não permita que links mágicos sejam enviados para localhost
+// mesmo se a aplicação tiver sido aberta por um endereço local por engano.
+const PRODUCTION_URL = 'https://entrelinhas-guiimagnos-projects.vercel.app';
+const getAuthRedirectUrl = () =>
+  import.meta.env.PROD ? PRODUCTION_URL : window.location.origin;
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
@@ -37,7 +43,7 @@ function Login() {
     setError('');
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: getAuthRedirectUrl() },
     });
     if (error) setError(error.message);
     else setSent(true);
