@@ -36,7 +36,8 @@ export function DailyForm({ date }: { date: string }) {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState('');
-  const [offlineConflict, setOfflineConflict] = useState(false);\n  const [step, setStep] = useState(0);
+  const [offlineConflict, setOfflineConflict] = useState(false);
+  const [step, setStep] = useState(0);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
