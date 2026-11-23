@@ -75,7 +75,19 @@ function Login() {
 function Shell({ onSignOut }: { onSignOut: () => void }) {
   const [tab, setTab] = useState<Tab>('registro');
   const [date, setDate] = useState(localDateKey());
+  const [online, setOnline] = useState(navigator.onLine);
   const today = localDateKey();
+
+  useEffect(() => {
+    const onOnline = () => setOnline(true);
+    const onOffline = () => setOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
 
   function openDate(d: string) {
     setDate(d);
@@ -88,6 +100,8 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
         <strong>Diário</strong>
         <button type="button" className="link" onClick={onSignOut}>Sair</button>
       </header>
+
+      {!online && <div className="offline-banner" role="status">Sem conexão. As alterações podem ficar apenas neste navegador até a sincronização.</div>}
 
       <main className="content">
         {tab === 'registro' && (
@@ -119,7 +133,7 @@ function TabButton({ active, onClick, children }: {
   active: boolean; onClick: () => void; children: React.ReactNode;
 }) {
   return (
-    <button type="button" className={active ? 'tab active' : 'tab'} onClick={onClick}>
+    <button type="button" className={active ? 'tab active' : 'tab'} aria-current={active ? 'page' : undefined} onClick={onClick}>
       {children}
     </button>
   );
