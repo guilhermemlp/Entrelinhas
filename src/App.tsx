@@ -40,32 +40,57 @@ function Login() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (sending || cooldown > 0) return;
     setError('');
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: getAuthRedirectUrl() },
-    });
-    if (error) setError(error.message);
-    else setSent(true);
+    setSending(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: getAuthRedirectUrl() },
+      });
+      if (error) {
+        const rateLimited = /rate.?limit|too many requests|email rate limit/i.test(error.message);
+        setError(rateLimited
+          ? 'O serviço de e-mail atingiu temporariamente o limite de envios. Aguarde antes de solicitar outro link. Se já recebeu um e-mail recentemente, use o link mais novo que ainda estiver válido.'
+          : 'Não foi possível solicitar o acesso. Verifique o endereço de e-mail e tente novamente.');
+        if (rateLimited) setCooldown(60);
+      } else {
+        setSent(true);
+      }
+    } catch {
+      setError('Não foi possível conectar ao serviço de autenticação. Verifique sua conexão e tente novamente.');
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
     <main className="login">
-      <h1>Diário</h1>
+      <h1>Entrelinhas</h1>
       {sent ? (
-        <p>Enviamos um link de acesso para {email}. Abra-o neste dispositivo.</p>
+        <p>Se o endereço estiver habilitado, enviaremos um link de acesso para {email}. Abra-o neste dispositivo. Confira também a caixa de spam.</p>
       ) : (
         <form onSubmit={onSubmit}>
           <label>
             E-mail
             <input type="email" required autoComplete="email" value={email}
-              onChange={e => setEmail(e.target.value)} />
+              onChange={e => setEmail(e.target.value)} disabled={sending} />
           </label>
-          <button type="submit" className="primary">Receber link de acesso</button>
-          {error && <p className="error">{error}</p>}
+          <button type="submit" className="primary" disabled={sending || cooldown > 0}>
+            {sending ? 'Solicitando…' : cooldown > 0 ? `Aguarde ${cooldown}s` : 'Receber link de acesso'}
+          </button>
+          {error && <p className="error" role="alert">{error}</p>}
         </form>
       )}
     </main>
