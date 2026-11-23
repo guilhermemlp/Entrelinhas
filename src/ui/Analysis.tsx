@@ -56,14 +56,15 @@ export function Analysis() {
   const trend = sum.n >= 7 ? slope(values) : null;
   const ma = movingAverage(values, 7);
 
+  const chartLabel = (date: string) => rangeDays > 90 ? date.slice(2) : date.slice(5);
   const chartData = records.map((r, i) => ({
-    date: r.date.slice(5),
+    date: chartLabel(r.date),
     value: values[i],
     compare: compare ? series(records, compare)[i] : null,
     avg7: ma[i],
   }));
   const sleep = sleepSeries(records);
-  const sleepData = records.map((r, i) => ({ date: r.date.slice(5), sleep: sleep[i] }));
+  const sleepData = records.map((r, i) => ({ date: chartLabel(r.date), sleep: sleep[i] }));
 
   const corr = compare
     ? spearman(values, series(records, compare))
@@ -107,22 +108,40 @@ export function Analysis() {
 
       {error && <p className="error" role="alert">{error}</p>}
 
-      <p className="base">
-        <strong>Base do período:</strong> {cov.days} dias · {cov.complete} concluídos ·{' '}
-        {cov.draft} rascunhos · {cov.missing} sem registro.
-        Cobertura de registros: {coveragePct}%. Os indicadores consideram somente valores
-        preenchidos; cada estatística informa seu próprio n.
-      </p>
-
-      {loading && <p className="muted" role="status">Carregando registros do período…</p>}
-      {!loading && !error && sum.n === 0 && (
-        <p className="notice">Ainda não há valores para este indicador no período. Experimente ampliar o intervalo ou escolha outro indicador.</p>
+      {loading ? (
+        <p className="muted" role="status">Atualizando a análise do período…</p>
+      ) : !error && (
+        <>
+          <section className="analysis-overview" aria-label="Resumo da cobertura do período">
+            <div className="analysis-overview-heading">
+              <div>
+                <span className="eyebrow">Visão geral do período</span>
+                <h3>{cov.complete + cov.draft} de {cov.days} dias registrados</h3>
+              </div>
+              <strong className="coverage-value">{coveragePct}%</strong>
+            </div>
+            <div className="coverage-track" role="progressbar" aria-label="Cobertura de registros" aria-valuemin={0} aria-valuemax={100} aria-valuenow={coveragePct}>
+              <span style={{ width: `${coveragePct}%` }} />
+            </div>
+            <div className="coverage-breakdown">
+              <span><i className="coverage-dot complete" />{cov.complete} concluídos</span>
+              <span><i className="coverage-dot draft" />{cov.draft} rascunhos</span>
+              <span><i className="coverage-dot missing" />{cov.missing} sem registro</span>
+            </div>
+            <p className="analysis-method-note">A cobertura considera dias com registro. As estatísticas abaixo usam apenas os valores preenchidos de cada indicador.</p>
+          </section>
+          {sum.n === 0 && (
+            <p className="notice">Ainda não há valores para este indicador no período. Experimente ampliar o intervalo ou escolher outro indicador.</p>
+          )}
+          {sum.n > 0 && sum.n < 7 && (
+            <p className="muted" role="status">Amostra pequena: há {sum.n} dia(s) com valor. Tendências e comparações podem ser instáveis.</p>
+          )}
+        </>
       )}
-      {!loading && !error && sum.n > 0 && sum.n < 7 && (
-        <p className="muted" role="status">Amostra pequena: há {sum.n} dia(s) com valor. Tendências e comparações podem ser instáveis.</p>
-      )}
 
-      <div className="stats">
+      <details className="analysis-details">
+        <summary>Estatísticas detalhadas <span className="muted">({sum.n} observações)</span></summary>
+        <div className="stats">
         <Stat label="n (dias com valor)" value={String(sum.n)} />
         <Stat label="Média" value={fmt(sum.mean)} />
         <Stat label="Desvio padrão" value={fmt(sum.sd)} />
@@ -135,9 +154,11 @@ export function Analysis() {
           value={trend === null ? 'insuficiente' : signed(trend)}
           sub={sum.n < 7 ? 'precisa de ao menos 7 dias' : undefined}
         />
-      </div>
+        </div>
+      </details>
 
-      <h3>{INDICATOR_LABEL[indicator]}</h3>
+      <h3 className="analysis-section-title">Evolução de {INDICATOR_LABEL[indicator]}</h3>
+      <p className="muted small">Cada ponto representa um valor registrado. Espaços sem ponto indicam dias sem avaliação.</p>
       <div className="chart">
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={chartData}>
@@ -155,20 +176,20 @@ export function Analysis() {
         </ResponsiveContainer>
       </div>
 
-      <h3>Sono (horas)</h3>
+      <h3 className="analysis-section-title">Sono (horas)</h3>
       <div className="chart">
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={sleepData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" minTickGap={16} />
-            <YAxis domain={[0, 12]} />
+            <YAxis domain={[0, 'dataMax']} />
             <Tooltip />
             <Line type="monotone" dataKey="sleep" name="Horas dormidas" stroke="#4f7d5b" connectNulls={false} dot />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      <h3>Correlação exploratória</h3>
+      <h3 className="analysis-section-title">Correlação exploratória</h3>
       {!CORRELATIONS_ENABLED && (
         <p className="muted">
           Desativada nesta versão. Correlações só são exibidas com pelo menos {MIN_PAIRS} dias
