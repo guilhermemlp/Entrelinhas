@@ -34,6 +34,7 @@ export function DailyForm({ date }: { date: string }) {
   const entryRef = useRef<LoadedEntry | null>(null);
   const fieldsRef = useRef<DraftFields | null>(null);
   const saveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  const offlineQueueRef = useRef<Promise<void>>(Promise.resolve());
   const revisionRef = useRef(0);
   const offlineConflictRef = useRef(false);
 
@@ -79,6 +80,12 @@ export function DailyForm({ date }: { date: string }) {
     return () => { cancelled = true; };
   }, [date]);
 
+  const queueOffline = useCallback((operation: () => Promise<void>): Promise<void> => {
+    const queued = offlineQueueRef.current.then(operation, operation);
+    offlineQueueRef.current = queued.catch(() => undefined);
+    return queued;
+  }, []);
+
   const persist = useCallback((): Promise<boolean> => {
     const run = async (): Promise<boolean> => {
       const e = entryRef.current;
@@ -93,20 +100,23 @@ export function DailyForm({ date }: { date: string }) {
       }
       setSaveState('saving');
       let localStored = false;
-      try { await saveOfflineDraft(e.id, e.updated_at, f); localStored = true; } catch { /* sincronização online ainda pode funcionar */ }
+      try {
+        await queueOffline(() => saveOfflineDraft(e.id, e.updated_at, f));
+        localStored = true;
+      } catch { /* sincronização online ainda pode funcionar */ }
       try {
         const updatedAt = await saveDraft(e, f);
         const updated = { ...e, updated_at: updatedAt, scores: f.scores };
         entryRef.current = updated;
         setEntry(updated);
         if (revisionRef.current === revision) {
-          await deleteOfflineDraft(e.id).catch(() => undefined);
+          await queueOffline(() => deleteOfflineDraft(e.id)).catch(() => undefined);
           // Uma edição pode ocorrer enquanto a limpeza do IndexedDB está pendente.
           if (revisionRef.current !== revision && fieldsRef.current) {
-            await saveOfflineDraft(e.id, updatedAt, fieldsRef.current).catch(() => undefined);
+            await queueOffline(() => saveOfflineDraft(e.id, updatedAt, fieldsRef.current!)).catch(() => undefined);
           }
         } else if (fieldsRef.current) {
-          await saveOfflineDraft(e.id, updatedAt, fieldsRef.current).catch(() => undefined);
+          await queueOffline(() => saveOfflineDraft(e.id, updatedAt, fieldsRef.current!)).catch(() => undefined);
         }
         setSaveState('saved'); setMessage('');
         return true;
@@ -123,7 +133,7 @@ export function DailyForm({ date }: { date: string }) {
     const queued = saveQueueRef.current.then(run, run);
     saveQueueRef.current = queued;
     return queued;
-  }, []);
+  }, [queueOffline]);
   // Avisa antes de fechar/navegar enquanto há alterações não confirmadas.
   useEffect(() => {
     if (!dirty) return;
@@ -152,7 +162,7 @@ export function DailyForm({ date }: { date: string }) {
     fieldsRef.current = next;
     revisionRef.current += 1;
     if (entryRef.current) {
-      void saveOfflineDraft(entryRef.current.id, entryRef.current.updated_at, next)
+      void queueOffline(() => saveOfflineDraft(entryRef.current!.id, entryRef.current!.updated_at, next))
         .catch(() => setMessage('Não foi possível guardar a cópia offline neste navegador.'));
     }
     setFields(next);
