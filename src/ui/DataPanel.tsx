@@ -10,7 +10,7 @@ function download(name: string, content: string, type: string) {
   a.href = url;
   a.download = name;
   a.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
@@ -59,6 +59,11 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
         onChange={e => {
           const file = e.target.files?.[0];
           if (!file) return;
+          if (file.size > 10 * 1024 * 1024) {
+            setMessage('O backup excede o limite de 10 MB.');
+            e.target.value = '';
+            return;
+          }
           void run(async () => {
             const entries = parseBackup(await file.text());
             const r = await restoreEntries(entries);
