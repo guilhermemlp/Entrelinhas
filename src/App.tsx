@@ -145,9 +145,9 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
       </main>
 
       <nav className="tabbar" aria-label="Navegação principal">
-        <TabButton active={tab === 'registro'} onClick={() => { setDate(today); setTab('registro'); }}>Hoje</TabButton>
-        <TabButton active={tab === 'calendario'} onClick={() => setTab('calendario')}>Calendário</TabButton>
-        <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}>Análise</TabButton>
+        <TabButton active={tab === 'registro'} onClick={() => { setDate(today); setTab('registro'); }}>{date === today ? 'Hoje' : 'Registro'}</TabButton>
+        <TabButton active={tab === 'calendario'} onClick={() => setTab('calendario')}>Histórico</TabButton>
+        <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}>Análises</TabButton>
         <TabButton active={tab === 'dados'} onClick={() => setTab('dados')}>Dados</TabButton>
       </nav>
     </div>
