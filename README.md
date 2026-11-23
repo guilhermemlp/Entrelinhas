@@ -16,7 +16,9 @@ recusa dados que violam as regras.
 ## Estrutura
 
 ```
-supabase/migrations/001_init.sql   esquema, RLS, auditoria, conclusão, apagamento
+supabase/migrations/001_init.sql   esquema inicial, RLS e funções base
+supabase/migrations/002_data_integrity.sql   gravação transacional e auditoria protegida
+supabase/migrations/003_atomic_backup_restore.sql   restauração transacional de backup
 src/domain/indicators.ts           catálogo dos 45 indicadores (espelha o banco)
 src/domain/schemas.ts              validação (rascunho, conclusão, backup)
 src/domain/analysis.ts             análise descritiva + correlação com gate
@@ -31,7 +33,7 @@ src/ui/                            formulário, calendário, análise, dados
 ### 1. Supabase
 
 1. Crie um projeto em supabase.com (plano free).
-2. No **SQL Editor**, execute `supabase/migrations/001_init.sql` inteiro.
+2. No **SQL Editor**, execute os arquivos SQL em ordem: `001_init.sql`, `002_data_integrity.sql` e `003_atomic_backup_restore.sql`. Não pule a ordem.
 3. Em **Authentication → Providers**, mantenha **Email** habilitado (login por link).
 4. Em **Authentication → URL Configuration**, defina a *Site URL* com o endereço
    da aplicação (ex.: `https://seu-diario.vercel.app`) e adicione a mesma URL em
@@ -83,7 +85,7 @@ Nenhum servidor precisa ficar ligado no seu computador.
 | Histórico de revisões não pode ser alterado | Sem políticas de update/delete em `entry_revision` |
 | Valores fora de 0–10 e indicadores desconhecidos são recusados | `CHECK` no banco + `zod` no front |
 | Dia sem registro não vira zero nas análises | `null` e `n` explícito em toda estatística |
-| Restauração não sobrescreve dias existentes | `restoreEntries` pula e informa |
+| Restauração não sobrescreve dias existentes | `restore_entries` no banco pula e informa; o lote é transacional |
 
 ## Análise
 
@@ -108,14 +110,18 @@ Ao ativar correlações, mantenha a leitura como associação, nunca causa.
 
 Honestidade sobre o que **não** está pronto:
 
-1. **Offline:** o autosave exige conexão. Sem rede, a edição fica na tela mas não é
-   gravada. Um buffer em IndexedDB com envio posterior ainda precisa ser implementado.
-2. **Testes de RLS:** a política foi escrita, mas precisa ser verificada com dois
-   usuários reais (um não deve ver os dados do outro). Recomendo um teste manual antes de
-   usar com dados reais.
-3. **Testes da conclusão no banco:** a regra está no SQL, mas só os testes de domínio
-   rodam automaticamente. Um teste de integração contra um Supabase local (`supabase start`)
-   é o próximo passo.
+1. **Offline (parcial):** após carregar um registro com conexão, alterações também são
+   guardadas no IndexedDB e sincronizadas quando a conexão voltar. Esse armazenamento é
+   local ao perfil do navegador, não é criptografado pelo aplicativo e pode ser apagado
+   pelo navegador. Se a versão do servidor mudar em outra sessão, a cópia local é preservada
+   e exige decisão manual; não há resolução automática de conflitos. Ainda é necessário
+   estar online para carregar/criar o registro inicial.
+2. **Testes de RLS:** as políticas e permissões foram reforçadas, mas ainda precisam ser
+   verificadas contra um Supabase local ou projeto de teste com dois usuários distintos.
+   Não declare a segurança multiusuário validada até esse teste passar.
+3. **Testes da conclusão e restauração no banco:** as funções SQL validam as regras e a
+   restauração é transacional, mas ainda falta executar testes de integração contra um
+   Supabase local (`supabase start`).
 4. **Lista de indicadores duplicada:** o catálogo existe no SQL e no TypeScript. Qualquer
    mudança exige alterar os dois. Um teste de integração deveria comparar ambos.
 5. **Plano gratuito do Supabase:** projetos inativos por um período podem ser pausados, e
