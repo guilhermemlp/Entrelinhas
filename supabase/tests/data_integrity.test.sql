@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(11);
+select plan(12);
 
 -- Usuários de teste isolados; não usar dados reais.
 insert into auth.users (
@@ -150,6 +150,16 @@ select throws_ok(
           'sleep_notes', '',
           'events_context', '',
           'behavior_notes', '',
+          'scores', (select jsonb_object_agg(key, 3)
+                       from public.indicator_def)
+        ),
+        jsonb_build_object(
+          'entry_date', '2026-01-13',
+          'status', 'draft',
+          'sleep_hours', 7,
+          'sleep_notes', '',
+          'events_context', '',
+          'behavior_notes', '',
           'scores', '{"indicador_inexistente":4}'::jsonb
         )
       )
@@ -157,7 +167,15 @@ select throws_ok(
   $$,
   'P0001',
   'Quantidade de indicadores inválida no registro 2026-01-12',
-  'restauração rejeita lote inválido sem aceitar dados parciais'
+  'restauração rejeita lote que contém registro inválido'
+);
+
+select is(
+  (select count(*)::integer from public.daily_entry
+    where user_id = '10000000-0000-0000-0000-000000000001'
+      and entry_date = date '2026-01-12'),
+  0,
+  'falha em um item desfaz também os itens válidos anteriores do lote'
 );
 
 select * from finish();
