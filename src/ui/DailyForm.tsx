@@ -11,12 +11,12 @@ import {
 const DEBOUNCE_MS = 800;
 
 const FORM_STEPS = [
-  { title: 'Humor', description: 'Observe as emoções predominantes e a estabilidade emocional ao longo do dia.', dimensions: ['mood'] },
-  { title: 'Energia e ativação', description: 'Registre disposição, agitação, hiperatividade e necessidade de estímulos.', dimensions: ['energy'] },
+  { title: 'Visão geral', description: 'Acompanhe o progresso e escolha por onde começar. Nenhum indicador é preenchido automaticamente.', dimensions: [] },
+  { title: 'Humor e energia', description: 'Observe emoções, estabilidade, disposição e nível de ativação ao longo do dia.', dimensions: ['mood', 'energy'] },
   { title: 'Cognição e ansiedade', description: 'Observe pensamentos, atenção, preocupações e tensão.', dimensions: ['cognition', 'anxiety'] },
-  { title: 'Impulsividade e sono', description: 'Registre impulsos, comportamentos repetitivos e recuperação.', dimensions: ['impulsivity', 'sleep'] },
-  { title: 'Comportamento e contexto', description: 'Observe interações, atividades e acontecimentos do dia.', dimensions: ['social', 'context'] },
-  { title: 'Registro narrativo', description: 'Acrescente contexto que os indicadores não conseguem representar.', dimensions: [] },
+  { title: 'Impulsividade e comportamento', description: 'Registre impulsos, comportamentos repetitivos, sociabilidade e atividades.', dimensions: ['impulsivity', 'social'] },
+  { title: 'Sono e contexto', description: 'Registre sono, recuperação e acontecimentos que marcaram o dia.', dimensions: ['sleep', 'context'] },
+  { title: 'Narrativa e revisão', description: 'Acrescente contexto e revise o registro antes de concluí-lo.', dimensions: [] },
 ] as const;
 
 function formatDate(key: string): string {
@@ -197,7 +197,7 @@ export function DailyForm({ date }: { date: string }) {
         );
         if (targetStep >= 0) setStep(targetStep);
       } else if (f.sleep_hours === null) {
-        setStep(2);
+        setStep(4);
       } else {
         setStep(FORM_STEPS.length - 1);
       }
@@ -234,8 +234,15 @@ export function DailyForm({ date }: { date: string }) {
     + Number(fields.behavior_notes.trim().length > 0);
   const completedRequired = filled + Number(fields.sleep_hours !== null) + requiredNarrative;
   const totalRequired = total + 3;
-  const stepProgress = FORM_STEPS.map(item => {
-    if (item.dimensions.length === 0) {
+  const stepProgress = FORM_STEPS.map((item, index) => {
+    if (index === 0) {
+      return {
+        filled: completedRequired,
+        total: totalRequired,
+        complete: completedRequired === totalRequired,
+      };
+    }
+    if (index === FORM_STEPS.length - 1) {
       return {
         filled: requiredNarrative,
         total: 2,
@@ -321,6 +328,35 @@ export function DailyForm({ date }: { date: string }) {
         </p>
       )}
 
+      {step === 0 && (
+        <section className="overview-step" aria-label="Visão geral do registro">
+          <div className="overview-count">
+            <strong>{completedRequired} de {totalRequired}</strong>
+            <span>campos obrigatórios preenchidos</span>
+          </div>
+          <div className="overview-dimensions">
+            {DIMENSIONS.map(dim => {
+              const done = dim.indicators.filter(ind => fields.scores[ind.key] !== null).length
+                + (dim.key === 'sleep' && fields.sleep_hours !== null ? 1 : 0);
+              const count = dim.indicators.length + (dim.key === 'sleep' ? 1 : 0);
+              return (
+                <button key={dim.key} type="button" className="overview-dimension"
+                  onClick={() => {
+                    const target = FORM_STEPS.findIndex(item => (item.dimensions as readonly string[]).includes(dim.key));
+                    if (target >= 0) setStep(target);
+                  }}>
+                  <span>{dim.label}</span>
+                  <strong>{done}/{count}</strong>
+                  <span className="overview-mini-track"><i style={{ width: `${count ? done / count * 100 : 0}%` }} /></span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="muted small">Você pode avançar por etapas, voltar e alterar qualquer resposta. O rascunho é salvo automaticamente.</p>
+          <button type="button" className="primary" onClick={() => setStep(1)}>Começar registro</button>
+        </section>
+      )}
+
       {DIMENSIONS.filter(dim => (FORM_STEPS[step].dimensions as readonly string[]).includes(dim.key)).map(dim => (
         <DimensionSection
           key={dim.key}
@@ -331,7 +367,8 @@ export function DailyForm({ date }: { date: string }) {
         />
       ))}
 
-      {step === FORM_STEPS.length - 1 && <section className="narrative">
+      {step === FORM_STEPS.length - 1 && <>
+      <section className="narrative">
         <h3>Registro narrativo</h3>
         <label>
           Acontecimentos e contexto <span className="req">*</span>
@@ -357,7 +394,22 @@ export function DailyForm({ date }: { date: string }) {
             rows={2}
           />
         </label>
-      </section>}
+      </section>
+      <section className="review-summary">
+        <h3>Revisão do registro</h3>
+        <p>{filled} de {total} indicadores avaliados · {fields.sleep_hours === null ? 'Horas de sono pendentes' : `${fields.sleep_hours} h de sono`}</p>
+        <p>{missingFields.length === 0 ? 'Todos os campos obrigatórios foram preenchidos.' : `Ainda faltam ${missingFields.length} campos obrigatórios.`}</p>
+        <div className="review-dimensions">
+          {DIMENSIONS.map(dim => {
+            const done = dim.indicators.filter(ind => fields.scores[ind.key] !== null).length
+              + (dim.key === 'sleep' && fields.sleep_hours !== null ? 1 : 0);
+            const count = dim.indicators.length + (dim.key === 'sleep' ? 1 : 0);
+            const target = FORM_STEPS.findIndex(item => (item.dimensions as readonly string[]).includes(dim.key));
+            return <button key={dim.key} type="button" className="link" onClick={() => setStep(target)}>{dim.label}: {done}/{count} · revisar</button>;
+          })}
+        </div>
+      </section>
+      </>}
 
       <footer className="daily-footer">
         {message && <p className="message">{message}</p>}
@@ -393,7 +445,7 @@ export function DailyForm({ date }: { date: string }) {
           </button>
           {step < FORM_STEPS.length - 1 ? (
             <button type="button" className="primary" onClick={() => setStep(current => Math.min(FORM_STEPS.length - 1, current + 1))}>
-              Próxima etapa
+              {step === 0 ? 'Começar registro' : 'Próxima etapa'}
             </button>
           ) : (
             <button
@@ -480,31 +532,30 @@ function ScoreInput({
           {value === null ? 'Não avaliado' : value}
         </output>
       </div>
-      <div className="score-controls">
-        <input
-          id={key}
-          type="range"
-          min={0}
-          max={10}
-          step={1}
-          value={value ?? 5}
-          aria-label={label}
-          aria-describedby={hintId}
-          aria-valuetext={value === null ? 'Não avaliado; ajuste para registrar uma pontuação' : `${value} de 10`}
-          onChange={e => onChange(Number(e.target.value))}
-        />
-        {value !== null && (
-          <button type="button" className="link clear-score" onClick={() => onChange(null)} aria-label={`Limpar avaliação de ${label}`}>
-            Limpar
+      <div className="score-options" role="group" aria-label={`Pontuação de 0 a 10 para ${label}`}>
+        {Array.from({ length: 11 }, (_, score) => (
+          <button
+            key={score}
+            type="button"
+            className={value === score ? 'score-option selected' : 'score-option'}
+            aria-pressed={value === score}
+            aria-label={`${score} de 10`}
+            onClick={() => onChange(score)}
+          >
+            {score}
           </button>
-        )}
+        ))}
       </div>
       <div className="scale-endpoints" id={hintId}>
         <span>0 · {scaleLow}</span>
         <span className="scale-midpoint">5</span>
         <span>10 · {scaleHigh}</span>
       </div>
-      {value === null && <p className="score-unset-hint">Mova o controle para registrar sua avaliação. A posição inicial não representa uma resposta.</p>}
+      {value === null ? (
+        <p className="score-unset-hint">Selecione uma opção. Nenhuma pontuação está pré-selecionada.</p>
+      ) : (
+        <button type="button" className="link clear-score" onClick={() => onChange(null)} aria-label={`Limpar avaliação de ${label}`}>Limpar avaliação</button>
+      )}
     </fieldset>
   );
 }
