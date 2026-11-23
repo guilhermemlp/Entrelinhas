@@ -60,4 +60,25 @@ export const backupSchema = z.object({
   schema_version: z.literal(1),
   exported_at: z.string().optional(),
   entries: z.array(exportEntrySchema),
+}).superRefine((backup, ctx) => {
+  const seen = new Set<string>();
+  backup.entries.forEach((entry, index) => {
+    if (seen.has(entry.entry_date)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['entries', index, 'entry_date'],
+        message: `Data duplicada no backup: ${entry.entry_date}`,
+      });
+    }
+    seen.add(entry.entry_date);
+
+    const missing = INDICATOR_KEYS.filter(key => !(key in entry.scores));
+    if (missing.length > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['entries', index, 'scores'],
+        message: `Indicadores ausentes no backup: ${missing.join(', ')}`,
+      });
+    }
+  });
 });
