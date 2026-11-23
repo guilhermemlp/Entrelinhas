@@ -139,6 +139,7 @@ export function Analysis() {
         </>
       )}
 
+      {!loading && !error && <>
       <details className="analysis-details">
         <summary>Estatísticas detalhadas <span className="muted">({sum.n} observações)</span></summary>
         <div className="stats">
@@ -209,6 +210,7 @@ export function Analysis() {
         Observado: valores registrados. Associação: estatística descritiva, sem diagnóstico.
         Interpretação: fica por sua conta.
       </p>
+      </>}
     </section>
   );
 }
