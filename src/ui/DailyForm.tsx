@@ -184,8 +184,21 @@ export function DailyForm({ date }: { date: string }) {
     if (!f || !entryRef.current || offlineConflict) return;
     const missing = missingForComplete(f);
     if (missing.length > 0) {
+      const firstMissingIndicator = DIMENSIONS
+        .flatMap(dim => dim.indicators.map(ind => ({ dimension: dim.key, key: ind.key })))
+        .find(item => f.scores[item.key] == null);
+      if (firstMissingIndicator) {
+        const targetStep = FORM_STEPS.findIndex(item =>
+          (item.dimensions as readonly string[]).includes(firstMissingIndicator.dimension)
+        );
+        if (targetStep >= 0) setStep(targetStep);
+      } else if (f.sleep_hours === null) {
+        setStep(2);
+      } else {
+        setStep(FORM_STEPS.length - 1);
+      }
       setSaveState('error');
-      setMessage(`Faltam ${missing.length} campo(s). Ex.: ${missing.slice(0, 3).join('; ')}.`);
+      setMessage(`Ainda faltam ${missing.length} campos para concluir. Voltei à primeira etapa com pendências.`);
       return;
     }
     setSaveState('saving');
