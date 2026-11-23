@@ -159,7 +159,7 @@ export function Analysis() {
         <Stat label="Mínimo / máximo" value={sum.n ? `${sum.min} / ${sum.max}` : '—'} />
         <Stat label="Últimos 7 dias" value={fmt(week.current.mean)} sub={`n=${week.current.n}`} />
         <Stat label="7 anteriores" value={fmt(week.previous.mean)} sub={`n=${week.previous.n}`} />
-        <Stat label="Variação semanal" value={signed(week.deltaMean)} />
+        <Stat label="Variação semanal" value={signed(week.deltaMean)} sub={week.current.n < 7 || week.previous.n < 7 ? 'amostra parcial em uma ou ambas as semanas' : 'médias dos valores disponíveis'} />
         <Stat
           label="Tendência (por dia)"
           value={trend === null ? 'insuficiente' : signed(trend)}
@@ -170,6 +170,7 @@ export function Analysis() {
 
       {sum.n > 0 && <>
       <h3 className="analysis-section-title">Evolução de {INDICATOR_LABEL[indicator]}</h3>
+      <p className="muted small">Escala: {ALL_INDICATORS.find(item => item.key === indicator)?.scaleLow} a {ALL_INDICATORS.find(item => item.key === indicator)?.scaleHigh}. Pontuações maiores seguem o sentido descrito para este indicador.</p>
       <p className="muted small">Cada ponto representa um valor registrado. Espaços sem ponto indicam dias sem avaliação.</p>
       <div className="chart">
         <ResponsiveContainer width="100%" height={260}>
