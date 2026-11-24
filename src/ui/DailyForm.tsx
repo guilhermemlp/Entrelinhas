@@ -321,6 +321,11 @@ export function DailyForm({ date }: { date: string }) {
         <div className="step-heading">
           <h3 ref={stepHeadingRef} tabIndex={-1}>{FORM_STEPS[step].title}</h3>
           <p>{FORM_STEPS[step].description}</p>
+          {step > 0 && step < FORM_STEPS.length - 1 && (
+            <small className="step-local-progress">
+              {stepProgress[step].filled} de {stepProgress[step].total} itens avaliados nesta dimensão
+            </small>
+          )}
         </div>
       </section>
 
