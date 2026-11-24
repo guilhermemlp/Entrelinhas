@@ -166,7 +166,7 @@ select throws_ok(
     )
   $$,
   'P0001',
-  'Quantidade de indicadores inválida no registro 2026-01-12',
+  'Quantidade de indicadores inválida no registro 2026-01-13',
   'restauração rejeita lote que contém registro inválido'
 );
 
