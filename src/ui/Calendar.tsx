@@ -43,7 +43,11 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
   const monthRecords = buildRange(from, to).map(
     d => records.get(d) ?? { date: d, status: null, scores: {}, sleep_hours: null },
   );
-  const c = coverage(monthRecords);
+  // Dias futuros não entram no denominador de cobertura do mês atual.
+  const elapsedRecords = monthRecords.filter(record => record.date <= today);
+  const c = coverage(elapsedRecords);
+  const coveragePct = c.days ? Math.round((c.complete + c.draft) / c.days * 100) : 0;
+  const isCurrentMonth = ym.y === Number(today.slice(0, 4)) && ym.m0 === Number(today.slice(5, 7)) - 1;
 
   function shift(delta: number) {
     setYm(prev => {
@@ -54,20 +58,37 @@ export function Calendar({ onSelect }: { onSelect: (date: string) => void }) {
 
   return (
     <section className="calendar">
+      <header className="calendar-intro">
+        <span className="eyebrow">SEU PERCURSO</span>
+        <h1>Histórico</h1>
+        <p>Volte a qualquer dia para consultar ou atualizar o que registrou.</p>
+      </header>
       <div className="cal-nav">
         <button type="button" onClick={() => shift(-1)} aria-label="Mês anterior">‹</button>
         <h2>{MONTHS[ym.m0]} de {ym.y}</h2>
         <button type="button" onClick={() => shift(1)} aria-label="Próximo mês">›</button>
+        {!isCurrentMonth && <button type="button" className="cal-today" onClick={() => {
+          const [y, m] = today.split('-').map(Number);
+          setYm({ y, m0: m - 1 });
+        }}>Mês atual</button>}
       </div>
 
       {loading && <p className="muted" role="status">Carregando calendário…</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {!loading && !error && (
         <div className="calendar-summary" aria-live="polite">
-          <p className="coverage">
-            {c.complete} concluídos · {c.draft} rascunhos · {c.missing} sem registro
-          </p>
-          <p className="muted small">Selecione um dia para consultar ou revisar o registro.</p>
+          <div className="calendar-summary-top">
+            <div><span className="eyebrow">{isCurrentMonth ? 'ATÉ HOJE' : 'RESUMO DO MÊS'}</span>
+              <strong>{c.complete + c.draft}<small> / {c.days} dias com registro</small></strong></div>
+            <b>{coveragePct}%</b>
+          </div>
+          <div className="calendar-coverage-track"><i style={{ width: `${coveragePct}%` }} /></div>
+          <div className="calendar-stats">
+            <span><i className="calendar-dot complete" />{c.complete} concluídos</span>
+            <span><i className="calendar-dot draft" />{c.draft} rascunhos</span>
+            <span><i className="calendar-dot missing" />{c.missing} sem registro</span>
+          </div>
+          <p className="muted small">Selecione um dia para consultar ou revisar o registro. Dias futuros não entram na cobertura.</p>
         </div>
       )}
 
