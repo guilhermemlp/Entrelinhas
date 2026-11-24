@@ -42,7 +42,13 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
   return (
     <>
     <section className="data-panel">
-      <h2>Dados e exportação</h2>
+      <header className="data-panel-header">
+        <span className="eyebrow">CONTROLE DOS SEUS REGISTROS</span>
+        <h1>Dados e configurações</h1>
+        <p>Exporte uma cópia, restaure um backup ou revise as opções de gerenciamento dos seus dados.</p>
+      </header>
+      <section className="data-card">
+        <div className="data-section-heading"><div><span className="eyebrow">PORTABILIDADE</span><h2>Exportar registros</h2></div><p>Escolha o formato adequado para guardar ou consultar seus dados fora do Entrelinhas.</p></div>
       <div className="row">
         <button type="button" disabled={busy} onClick={() => run(async () => {
           const entries = await fetchAllForExport();
@@ -63,11 +69,10 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
           Relatório estruturado (PDF)
         </button>
       </div>
+      </section>
 
-      <h2>Restaurar backup</h2>
-      <p className="muted">
-        Dias que já existem não são sobrescritos: são ignorados e listados abaixo.
-      </p>
+      <section className="data-card">
+        <div className="data-section-heading"><div><span className="eyebrow">RECUPERAÇÃO</span><h2>Restaurar backup</h2></div><p>Dias que já existem não são sobrescritos: são ignorados e listados antes da confirmação.</p></div>
       <input
         type="file"
         accept="application/json,.json"
@@ -126,11 +131,10 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
         </section>
       )}
 
-      <h2>Apagar meus dados</h2>
-      <p className="muted">
-        Remove permanentemente todos os seus registros e revisões. Não há recuperação
-        pelo aplicativo. Faça um backup JSON antes.
-      </p>
+      </section>
+
+      <section className="data-card data-card-danger">
+        <div className="data-section-heading"><div><span className="eyebrow">AÇÃO IRREVERSÍVEL</span><h2>Apagar meus dados</h2></div><p>Remove permanentemente todos os seus registros e revisões. Não há recuperação pelo aplicativo. Faça um backup JSON antes.</p></div>
       <div className="row">
         <input
           placeholder='Digite APAGAR para confirmar'
@@ -150,7 +154,8 @@ export function DataPanel({ onSignOut }: { onSignOut: () => void }) {
         </button>
       </div>
 
-      {message && <p className="message">{message}</p>}
+      {message && <p className="message" role="status" aria-live="polite">{message}</p>}
+      </section>
     </section>
     {reportEntries && (
       <article className="print-report">
