@@ -293,14 +293,26 @@ export function DailyForm({ date }: { date: string }) {
       </header>
 
       <section className="form-progress" aria-label="Progresso do registro">
-        <div className="form-progress-meta">
-          <span>Etapa {step + 1} de {FORM_STEPS.length}</span>
-          <strong>{completedRequired} de {totalRequired} campos obrigatórios preenchidos</strong>
+        <div className="progress-overview">
+          <div className="progress-metric progress-indicators">
+            <span className="progress-metric-label">Indicadores avaliados</span>
+            <strong>{filled}<small> / {total}</small></strong>
+            <div className="progress-track" role="progressbar" aria-label="Indicadores avaliados" aria-valuemin={0} aria-valuemax={total} aria-valuenow={filled}>
+              <span style={{ width: `${total ? filled / total * 100 : 0}%` }} />
+            </div>
+          </div>
+          <div className="progress-metric">
+            <span className="progress-metric-label">Informações complementares</span>
+            <strong>{Number(fields.sleep_hours !== null) + requiredNarrative}<small> / 3</small></strong>
+            <span className="progress-metric-note">Sono e narrativa</span>
+          </div>
+          <div className={status === 'complete' ? 'progress-metric progress-completion is-complete' : missingFields.length === 0 ? 'progress-metric progress-completion is-ready' : 'progress-metric progress-completion'}>
+            <span className="progress-metric-label">Conclusão do registro</span>
+            <strong>{status === 'complete' ? 'Concluído' : missingFields.length === 0 ? 'Pronto para concluir' : `${missingFields.length} pendências`}</strong>
+            <span className="progress-metric-note">{status === 'complete' ? 'Registro finalizado' : 'A conclusão é uma ação separada'}</span>
+          </div>
         </div>
-        <div className="progress-track" role="progressbar" aria-label="Campos obrigatórios preenchidos" aria-valuemin={0} aria-valuemax={totalRequired} aria-valuenow={completedRequired}>
-          <span style={{ width: `${(completedRequired / totalRequired) * 100}%` }} />
-        </div>
-        <nav className="step-nav" aria-label="Etapas do registro">
+        <nav className="step-nav" aria-label="Navegação entre áreas do registro">
           {FORM_STEPS.map((item, index) => {
             const progress = stepProgress[index];
             return (
@@ -309,11 +321,12 @@ export function DailyForm({ date }: { date: string }) {
                 type="button"
                 className={index === step ? 'step-nav-item active' : 'step-nav-item'}
                 aria-current={index === step ? 'step' : undefined}
-                aria-label={`Etapa ${index + 1}: ${item.title}. ${progress.filled} de ${progress.total} campos preenchidos`}
+                aria-label={`${item.title}. ${progress.filled} de ${progress.total} campos preenchidos`}
                 onClick={() => setStep(index)}
               >
-                <span className="step-nav-number">{progress.complete ? '✓' : index + 1}</span>
+                <span className="step-nav-number">{progress.complete ? '✓' : index === 0 ? '•' : index === FORM_STEPS.length - 1 ? '↗' : index}</span>
                 <span className="step-nav-label">{item.title}</span>
+                <span className="step-nav-count">{progress.filled}/{progress.total}</span>
               </button>
             );
           })}
