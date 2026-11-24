@@ -12,12 +12,13 @@ const DEBOUNCE_MS = 800;
 
 const FORM_STEPS = [
   { title: 'Visão geral', description: 'Acompanhe o progresso e escolha por onde começar. Nenhum indicador é preenchido automaticamente.', dimensions: [] },
-  { title: 'Humor e energia', description: 'Observe emoções, estabilidade, disposição e nível de ativação ao longo do dia.', dimensions: ['mood', 'energy'] },
-  { title: 'Cognição e ansiedade', description: 'Observe pensamentos, atenção, preocupações e tensão.', dimensions: ['cognition', 'anxiety'] },
-  { title: 'Impulsividade e comportamento', description: 'Registre impulsos, comportamentos repetitivos, sociabilidade e atividades.', dimensions: ['impulsivity', 'social'] },
-  { title: 'Sono e contexto', description: 'Registre sono, recuperação e acontecimentos que marcaram o dia.', dimensions: ['sleep', 'context'] },
+  ...DIMENSIONS.map(dim => ({
+    title: dim.label,
+    description: `Observe e registre ${dim.label.toLocaleLowerCase('pt-BR')} ao longo do dia. Você pode deixar qualquer item sem avaliação e retornar depois.`,
+    dimensions: [dim.key],
+  })),
   { title: 'Narrativa e revisão', description: 'Acrescente contexto e revise o registro antes de concluí-lo.', dimensions: [] },
-] as const;
+];
 
 function formatDate(key: string): string {
   return new Date(`${key}T12:00:00`).toLocaleDateString('pt-BR', {
