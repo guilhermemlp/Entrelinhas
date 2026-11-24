@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { localDateKey } from './domain/dates';
 import { DailyForm } from './ui/DailyForm';
-import { Calendar } from './ui/Calendar';
-import { Analysis } from './ui/Analysis';
-import { DataPanel } from './ui/DataPanel';
+const Calendar = lazy(() => import('./ui/Calendar').then(module => ({ default: module.Calendar })));
+const Analysis = lazy(() => import('./ui/Analysis').then(module => ({ default: module.Analysis })));
+const DataPanel = lazy(() => import('./ui/DataPanel').then(module => ({ default: module.DataPanel })));
 
 type Tab = 'registro' | 'calendario' | 'analise' | 'dados';
 
@@ -233,9 +233,13 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
               <DailyForm key={date} date={date} />
             </>
           )}
-          {tab === 'calendario' && <Calendar onSelect={openDate} />}
-          {tab === 'analise' && <Analysis />}
-          {tab === 'dados' && <DataPanel onSignOut={onSignOut} />}
+          {tab !== 'registro' && (
+            <Suspense fallback={<p className="center" role="status">Carregando seção…</p>}>
+              {tab === 'calendario' && <Calendar onSelect={openDate} />}
+              {tab === 'analise' && <Analysis />}
+              {tab === 'dados' && <DataPanel onSignOut={onSignOut} />}
+            </Suspense>
+          )}
         </main>
       </div>
     </div>
