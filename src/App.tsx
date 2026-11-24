@@ -190,7 +190,7 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
           <span><strong className="brand">Entrelinhas</strong><small>DIÁRIO DE AUTO-OBSERVAÇÃO</small></span>
         </div>
         <div className="topbar-actions">
-          <span className="connection-state"><i /> {online ? 'Sincronizado' : 'Offline'}</span>
+          <span className="connection-state"><i /> {online ? 'Conectado' : 'Offline'}</span>
           <button type="button" className="link" onClick={onSignOut}>Sair</button>
         </div>
       </header>
