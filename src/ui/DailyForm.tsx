@@ -312,8 +312,9 @@ export function DailyForm({ date }: { date: string }) {
             <span className="progress-metric-note">{status === 'complete' ? 'Registro finalizado' : 'A conclusão é uma ação separada'}</span>
           </div>
         </div>
-        <nav className="step-nav" aria-label="Navegação entre áreas do registro">
+        <nav className="step-nav" aria-label="Navegação entre dimensões e revisão">
           {FORM_STEPS.map((item, index) => {
+            if (index === 0) return null;
             const progress = stepProgress[index];
             return (
               <button
@@ -324,7 +325,7 @@ export function DailyForm({ date }: { date: string }) {
                 aria-label={`${item.title}. ${progress.filled} de ${progress.total} campos preenchidos`}
                 onClick={() => setStep(index)}
               >
-                <span className="step-nav-number">{progress.complete ? '✓' : index === 0 ? '•' : index === FORM_STEPS.length - 1 ? '↗' : index}</span>
+                <span className="step-nav-number">{progress.complete ? '✓' : index === FORM_STEPS.length - 1 ? '↗' : index - 1}</span>
                 <span className="step-nav-label">{item.title}</span>
                 <span className="step-nav-count">{progress.filled}/{progress.total}</span>
               </button>
@@ -402,6 +403,11 @@ export function DailyForm({ date }: { date: string }) {
           fields={fields}
           onScore={(k, v) => update(f => ({ ...f, scores: { ...f.scores, [k]: v } }))}
           onSleepHours={v => update(f => ({ ...f, sleep_hours: v }))}
+          onNavigateIndicator={key => {
+            const target = document.getElementById(`indicator-${key}`);
+            target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+            target?.querySelector('button, input')?.focus({ preventScroll: true });
+          }}
         />
       ))}
 
@@ -518,12 +524,13 @@ export function DailyForm({ date }: { date: string }) {
 }
 
 function DimensionSection({
-  dim, fields, onScore, onSleepHours,
+  dim, fields, onScore, onSleepHours, onNavigateIndicator,
 }: {
   dim: Dimension;
   fields: DraftFields;
   onScore: (key: string, value: number | null) => void;
   onSleepHours: (v: number | null) => void;
+  onNavigateIndicator: (key: string) => void;
 }) {
   const filled = dim.indicators.filter(i => fields.scores[i.key] != null).length;
   const isSleep = dim.key === 'sleep';
@@ -560,12 +567,16 @@ function DimensionSection({
         </label>
       )}
 
-      {dim.indicators.map(ind => (
+      {dim.indicators.map((ind, index) => (
         <ScoreInput
           key={ind.key}
           indicator={ind}
           value={fields.scores[ind.key] ?? null}
           onChange={v => onScore(ind.key, v)}
+          hasPrevious={index > 0}
+          hasNext={index < dim.indicators.length - 1}
+          onPrevious={() => onNavigateIndicator(dim.indicators[index - 1]?.key)}
+          onNext={() => onNavigateIndicator(dim.indicators[index + 1]?.key)}
         />
       ))}
     </details>
@@ -573,16 +584,20 @@ function DimensionSection({
 }
 
 function ScoreInput({
-  indicator, value, onChange,
+  indicator, value, onChange, hasPrevious, hasNext, onPrevious, onNext,
 }: {
   indicator: Indicator;
   value: number | null;
   onChange: (v: number | null) => void;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
   const { key, label, scaleLow, scaleHigh, scaleKind } = indicator;
   const hintId = `scale-hint-${key}`;
   return (
-    <fieldset className={value === null ? 'score score-unset' : 'score score-set'}>
+    <fieldset id={`indicator-${key}`} className={value === null ? 'score score-unset' : 'score score-set'}>
       <legend className="score-legend">{label}</legend>
       <div className="score-head">
         <span className="score-kind">{scaleKind === 'intensidade' ? 'Intensidade' : scaleKind === 'capacidade' ? 'Capacidade' : scaleKind === 'qualidade' ? 'Qualidade' : 'Frequência'}</span>
@@ -620,6 +635,10 @@ function ScoreInput({
       ) : (
         <button type="button" className="link clear-score" onClick={() => onChange(null)} aria-label={`Limpar avaliação de ${label}`}>Limpar avaliação</button>
       )}
+      <div className="indicator-navigation" aria-label={`Navegação a partir de ${label}`}>
+        <button type="button" className="link" onClick={onPrevious} disabled={!hasPrevious}>← Indicador anterior</button>
+        <button type="button" className="link" onClick={onNext} disabled={!hasNext}>Próximo indicador →</button>
+      </div>
     </fieldset>
   );
 }
