@@ -9,11 +9,10 @@ import { DataPanel } from './ui/DataPanel';
 
 type Tab = 'registro' | 'calendario' | 'analise' | 'dados';
 
-// Em produção, não permita que links mágicos sejam enviados para localhost
-// mesmo se a aplicação tiver sido aberta por um endereço local por engano.
-const PRODUCTION_URL = 'https://entrelinhas-guiimagnos-projects.vercel.app';
-const getAuthRedirectUrl = () =>
-  import.meta.env.PROD ? PRODUCTION_URL : window.location.origin;
+// O link mágico deve retornar à mesma origem em que o usuário iniciou o acesso.
+// Isso preserva a sessão no armazenamento local correto, inclusive em previews
+// da Vercel com domínio estável vinculado à branch.
+const getAuthRedirectUrl = () => window.location.origin;
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
