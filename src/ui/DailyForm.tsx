@@ -477,7 +477,10 @@ export function DailyForm({ date }: { date: string }) {
                     <span>{missing.length + Number(sleepMissing)} pendente(s) · abrir dimensão →</span>
                   </button>
                   {sleepMissing && (
-                    <button type="button" className="review-pending-item" onClick={() => setStep(target)}>
+                    <button type="button" className="review-pending-item" onClick={() => {
+                      setPendingIndicatorKey('sleep_hours');
+                      setStep(target);
+                    }}>
                       Horas de sono <span>Não informado · ir para o campo</span>
                     </button>
                   )}
@@ -613,6 +616,7 @@ function DimensionSection({
         <label className="hours">
           Horas dormidas
           <input
+            id="indicator-sleep_hours"
             type="number"
             inputMode="decimal"
             min={0}
