@@ -12,12 +12,14 @@ type Tab = 'registro' | 'calendario' | 'analise' | 'dados';
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     // INITIAL_SESSION já considera a sessão persistida no localStorage.
     // Centralizar a inicialização no listener evita a corrida entre getSession()
     // e eventos de autenticação (por exemplo, o retorno do link mágico).
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       setSession(currentSession);
       setReady(true);
     });
@@ -26,18 +28,134 @@ export default function App() {
   }, []);
 
   if (!ready) return <p className="center">Carregando…</p>;
+  if (passwordRecovery && session) {
+    return <PasswordUpdate onComplete={() => setPasswordRecovery(false)} />;
+  }
   if (!session) return <Login />;
   return <Shell onSignOut={() => supabase.auth.signOut()} />;
 }
 
 function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [mode, setMode] = useState<'login' | 'recovery'>('login');
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage('');
+    try {
+      if (mode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: window.location.origin,
+        });
+        if (error) throw error;
+        setMessage('Se o endereço estiver cadastrado, você receberá um e-mail para definir uma nova senha.');
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Não foi possível concluir a solicitação.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="login">
-      <h1>Entrelinhas</h1>
-      <p role="status">
-        A entrada por e-mail está temporariamente desativada.
-        Se você já tinha uma sessão ativa, atualize a página para continuar.
+      <div className="brand-lockup">
+        <span className="brand-mark" aria-hidden="true">e.</span>
+        <span><strong className="brand">Entrelinhas</strong><small>DIÁRIO DE AUTO-OBSERVAÇÃO</small></span>
+      </div>
+      <h1>{mode === 'login' ? 'Entre no seu espaço' : 'Definir ou recuperar senha'}</h1>
+      <p className="muted">
+        {mode === 'login'
+          ? 'Acesse com seu e-mail e senha. Você permanecerá conectado neste navegador.'
+          : 'Enviaremos um link para o e-mail cadastrado. Use-o uma vez para definir sua senha.'}
       </p>
+      <form onSubmit={submit}>
+        <label htmlFor="auth-email">E-mail</label>
+        <input
+          id="auth-email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={event => setEmail(event.target.value)}
+          disabled={busy}
+        />
+        {mode === 'login' && (
+          <>
+            <label htmlFor="auth-password">Senha</label>
+            <input
+              id="auth-password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={event => setPassword(event.target.value)}
+              disabled={busy}
+            />
+          </>
+        )}
+        <button className="primary" type="submit" disabled={busy || !email.trim() || (mode === 'login' && !password)}>
+          {busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Enviar link para definir senha'}
+        </button>
+      </form>
+      {message && <p className="message" role="status">{message}</p>}
+      <p>
+        <button type="button" className="link" onClick={() => { setMode(mode === 'login' ? 'recovery' : 'login'); setMessage(''); }}>
+          {mode === 'login' ? 'Esqueci ou ainda preciso definir minha senha' : 'Voltar para entrar'}
+        </button>
+      </p>
+    </main>
+  );
+}
+
+function PasswordUpdate({ onComplete }: { onComplete: () => void }) {
+  const [password, setPassword] = useState('');
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (password.length < 8) {
+      setMessage('A senha precisa ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (password !== confirmation) {
+      setMessage('As senhas não correspondem.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      onComplete();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Não foi possível atualizar a senha.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="login">
+      <h1>Crie sua senha</h1>
+      <p className="muted">Depois disso, você poderá entrar diretamente com e-mail e senha, sem solicitar novos links.</p>
+      <form onSubmit={submit}>
+        <label htmlFor="new-password">Nova senha</label>
+        <input id="new-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />
+        <label htmlFor="confirm-password">Confirme a senha</label>
+        <input id="confirm-password" type="password" autoComplete="new-password" minLength={8} required value={confirmation} onChange={event => setConfirmation(event.target.value)} disabled={busy} />
+        <button className="primary" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar senha'}</button>
+      </form>
+      {message && <p className="message error" role="alert">{message}</p>}
     </main>
   );
 }
