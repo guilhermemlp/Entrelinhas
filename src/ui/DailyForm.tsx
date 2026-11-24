@@ -161,6 +161,12 @@ export function DailyForm({ date }: { date: string }) {
         return true;
       } catch (err) {
         setSaveState('error');
+        if (err instanceof ConflictError) {
+          // Conflito detectado no salvamento online: bloqueia novas tentativas
+          // automáticas e mantém a cópia local para decisão explícita do usuário.
+          setOfflineConflict(true);
+          offlineConflictRef.current = true;
+        }
         setMessage(err instanceof ConflictError
           ? err.message
           : localStored
