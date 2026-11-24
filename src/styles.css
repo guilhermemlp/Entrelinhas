@@ -1141,3 +1141,96 @@ button.link { color: #45685c; font-weight: 600; }
   .data-panel .row button { width:100%; }
   .data-panel .row input { width:100%; }
 }
+
+
+/* Navegação responsiva — trilhos independentes para desktop e celular */
+.shell-layout {
+  grid-template-columns: minmax(210px, 248px) minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+}
+.side-rail {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+.side-rail .tabbar {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+.side-rail .tab,
+.side-rail > .tab {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.side-rail .tab > span:not(.nav-icon) {
+  min-width: 0;
+}
+.content {
+  min-width: 0;
+  width: 100%;
+}
+.mobile-tabbar { display: none; }
+
+@media (min-width: 761px) and (max-width: 980px) {
+  .shell-layout { grid-template-columns: 204px minmax(0, 1fr); }
+  .side-rail { padding: 1.6rem .8rem 1.25rem; }
+  .side-rail .tab,
+  .side-rail > .tab { gap: .55rem; padding: .68rem .6rem; font-size: .82rem; }
+  .content { padding: 1.5rem 1.25rem 4rem; }
+}
+
+@media (max-width: 760px) {
+  .shell { padding-bottom: 0; }
+  .shell-layout { display: block; width: 100%; min-height: calc(100dvh - 64px); }
+  .mobile-tabbar {
+    position: fixed;
+    z-index: 20;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .15rem;
+    padding: .4rem .45rem calc(.4rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e7e7dd;
+    background: rgba(255, 254, 250, .97);
+    box-shadow: 0 -8px 25px rgba(39, 57, 45, .06);
+    backdrop-filter: blur(16px);
+  }
+  .mobile-tabbar .tab {
+    display: flex;
+    min-width: 0;
+    min-height: 54px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: .12rem;
+    padding: .35rem .1rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #778078;
+    font-size: .68rem;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .mobile-tabbar .tab.active {
+    color: #36594b;
+    background: #e8eee8;
+    font-weight: 700;
+  }
+  .mobile-tabbar .nav-icon {
+    width: auto;
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+  .content { padding: 1.4rem 1rem calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (max-width: 380px) {
+  .mobile-tabbar { padding-left: .2rem; padding-right: .2rem; }
+  .mobile-tabbar .tab { font-size: .62rem; }
+}
