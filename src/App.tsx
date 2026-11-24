@@ -210,6 +210,13 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
           <div className="side-note"><span className="side-note-mark">✳</span><p>Um espaço para observar padrões, sem pressa de encontrar respostas.</p></div>
         </aside>
 
+        <nav className="mobile-tabbar" aria-label="Navegação principal">
+          <TabButton active={tab === 'registro' && date === today} onClick={() => { setDate(today); setTab('registro'); }}><span className="nav-icon" aria-hidden="true">◷</span><span>Meu dia</span></TabButton>
+          <TabButton active={tab === 'calendario' || (tab === 'registro' && date !== today)} onClick={() => setTab('calendario')}><span className="nav-icon" aria-hidden="true">▦</span><span>Histórico</span></TabButton>
+          <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}><span className="nav-icon" aria-hidden="true">⌁</span><span>Análises</span></TabButton>
+          <TabButton active={tab === 'dados'} onClick={() => setTab('dados')}><span className="nav-icon" aria-hidden="true">⚙</span><span>Dados</span></TabButton>
+        </nav>
+
         <main className="content">
           {tab === 'registro' && (
             <>
