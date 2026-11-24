@@ -1377,3 +1377,49 @@ button.link { color: #45685c; font-weight: 600; }
   .score-options { gap: 0.16rem; }
   .score-option { font-size: 0.76rem; }
 }
+
+
+/* Etapa 2 — navegação contextual entre indicadores */
+.indicator-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  margin-top: .35rem;
+  padding-top: .35rem;
+  border-top: 1px solid var(--line);
+}
+.indicator-navigation button {
+  min-height: 2.35rem;
+  padding: .35rem .15rem;
+  font-size: .76rem;
+}
+.indicator-navigation button:disabled {
+  visibility: hidden;
+  pointer-events: none;
+}
+.step-nav-item:focus-visible,
+.indicator-navigation button:focus-visible {
+  outline-offset: 2px;
+}
+.step-nav { scroll-padding-inline: .5rem; }
+.step-nav-item { scroll-snap-align: start; }
+.step-heading { scroll-margin-top: 5.5rem; }
+@media (max-width: 600px) {
+  .indicator-navigation {
+    position: sticky;
+    bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px));
+    z-index: 2;
+    margin-inline: -.6rem;
+    padding: .35rem .6rem;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+  }
+  .indicator-navigation button {
+    min-height: 2.7rem;
+    flex: 1;
+    background: var(--surface);
+    border-radius: 8px;
+  }
+}
