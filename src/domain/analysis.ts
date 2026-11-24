@@ -95,8 +95,10 @@ export interface WeekComparison {
 export function weekComparison(values: (number | null)[]): WeekComparison {
   const current = summarize(values.slice(-7));
   const previous = summarize(values.slice(-14, -7));
-  const deltaMean = current.mean !== null && previous.mean !== null
-    ? current.mean - previous.mean
+  // Só compara períodos equivalentes quando os dois blocos têm sete observações.
+  // Médias parciais continuam disponíveis acima, mas não geram uma variação enganosa.
+  const deltaMean = current.n === 7 && previous.n === 7
+    ? current.mean! - previous.mean!
     : null;
   return { current, previous, deltaMean };
 }
