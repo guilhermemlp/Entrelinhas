@@ -1184,6 +1184,7 @@ button.link { color: #45685c; font-weight: 600; }
 
 @media (max-width: 760px) {
   .shell { padding-bottom: 0; }
+  .side-rail { display: none; }
   .shell-layout { display: block; width: 100%; min-height: calc(100dvh - 64px); }
   .mobile-tabbar {
     position: fixed;
