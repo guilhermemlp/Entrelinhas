@@ -70,7 +70,7 @@ select lives_ok(
 );
 
 select throws_ok(
-  $
+  $conflict$
     select public.save_entry_draft(
       '30000000-0000-0000-0000-000000000003',
       timestamptz '2000-01-01 00:00:00+00',
@@ -82,7 +82,7 @@ select throws_ok(
         'scores', (select jsonb_object_agg(key, 1) from public.indicator_def)
       )
     )
-  $,
+  $conflict$,
   'P0001',
   'Conflito: registro alterado em outra sessão ou não encontrado',
   'salvamento com versão desatualizada é recusado como conflito'
