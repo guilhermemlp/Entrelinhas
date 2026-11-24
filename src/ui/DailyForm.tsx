@@ -62,7 +62,8 @@ export function DailyForm({ date }: { date: string }) {
     if (!target) return;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
-    target.querySelector('button, input')?.focus({ preventScroll: true });
+    const focusTarget = target.querySelector('button, input') as HTMLElement | null;
+    focusTarget?.focus({ preventScroll: true });
     setPendingIndicatorKey(null);
   }, [step, pendingIndicatorKey]);
 
