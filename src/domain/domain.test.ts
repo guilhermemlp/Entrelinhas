@@ -89,6 +89,15 @@ describe('weekComparison', () => {
   it('sem a semana anterior completa, não calcula variação', () => {
     expect(weekComparison([5, 5, 5]).deltaMean).toBeNull();
   });
+
+  it('não compara semanas com dias sem observação', () => {
+    const partial = [...Array(7).fill(2), 6, 6, null, 6, 6, 6, 6];
+    const result = weekComparison(partial);
+    expect(result.previous.mean).toBe(2);
+    expect(result.current.mean).toBe(6);
+    expect(result.current.n).toBe(6);
+    expect(result.deltaMean).toBeNull();
+  });
 });
 
 describe('movingAverage', () => {
