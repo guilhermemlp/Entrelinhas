@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(13);
 
 -- Usuários de teste isolados; não usar dados reais.
 insert into auth.users (
@@ -67,6 +67,25 @@ select lives_ok(
     )
   $$,
   'salvamento transacional aceita payload completo e válido'
+);
+
+select throws_ok(
+  $
+    select public.save_entry_draft(
+      '30000000-0000-0000-0000-000000000003',
+      timestamptz '2000-01-01 00:00:00+00',
+      jsonb_build_object(
+        'sleep_hours', 7.5,
+        'sleep_notes', 'teste',
+        'events_context', 'contexto de teste',
+        'behavior_notes', 'observação de teste',
+        'scores', (select jsonb_object_agg(key, 1) from public.indicator_def)
+      )
+    )
+  $,
+  'P0001',
+  'Conflito: registro alterado em outra sessão ou não encontrado',
+  'salvamento com versão desatualizada é recusado como conflito'
 );
 
 select lives_ok(
