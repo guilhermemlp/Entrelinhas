@@ -122,35 +122,52 @@ function Shell({ onSignOut }: { onSignOut: () => void }) {
   return (
     <div className="shell">
       <header className="topbar">
-        <strong className="brand">Entrelinhas</strong>
-        <button type="button" className="link" onClick={onSignOut}>Sair</button>
+        <div className="brand-lockup">
+          <span className="brand-mark" aria-hidden="true">e.</span>
+          <span><strong className="brand">Entrelinhas</strong><small>DIÁRIO DE AUTO-OBSERVAÇÃO</small></span>
+        </div>
+        <div className="topbar-actions">
+          <span className="connection-state"><i /> {online ? 'Sincronizado' : 'Offline'}</span>
+          <button type="button" className="link" onClick={onSignOut}>Sair</button>
+        </div>
       </header>
 
       {!online && <div className="offline-banner" role="status">Sem conexão. As alterações podem ficar apenas neste navegador até a sincronização.</div>}
 
-      <main className="content">
-        {tab === 'registro' && (
-          <>
-            {date !== today && (
-              <button type="button" className="link back" onClick={() => setDate(today)}>
-                ← Voltar para hoje
-              </button>
-            )}
-            <div className="entry-context"><span className="eyebrow">{date === today ? 'Meu dia' : 'Histórico · registro selecionado'}</span><p>{date === today ? 'Seu espaço de observação.' : 'Consultando ou revisando um registro anterior.'}</p></div>
-            <DailyForm key={date} date={date} />
-          </>
-        )}
-        {tab === 'calendario' && <Calendar onSelect={openDate} />}
-        {tab === 'analise' && <Analysis />}
-        {tab === 'dados' && <DataPanel onSignOut={onSignOut} />}
-      </main>
+      <div className="shell-layout">
+        <aside className="side-rail">
+          <span className="side-label">ESPAÇO PESSOAL</span>
+          <nav className="tabbar" aria-label="Navegação principal">
+            <TabButton active={tab === 'registro' && date === today} onClick={() => { setDate(today); setTab('registro'); }}><span className="nav-icon">◷</span>Meu dia</TabButton>
+            <TabButton active={tab === 'calendario' || (tab === 'registro' && date !== today)} onClick={() => setTab('calendario')}><span className="nav-icon">▦</span>Histórico</TabButton>
+            <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}><span className="nav-icon">⌁</span>Análises</TabButton>
+          </nav>
+          <div className="side-divider" />
+          <TabButton active={tab === 'dados'} onClick={() => setTab('dados')}><span className="nav-icon">⚙</span>Dados e configurações</TabButton>
+          <div className="side-note"><span className="side-note-mark">✳</span><p>Um espaço para observar padrões, sem pressa de encontrar respostas.</p></div>
+        </aside>
 
-      <nav className="tabbar" aria-label="Navegação principal">
-        <TabButton active={tab === 'registro' && date === today} onClick={() => { setDate(today); setTab('registro'); }}>Meu dia</TabButton>
-        <TabButton active={tab === 'calendario' || (tab === 'registro' && date !== today)} onClick={() => setTab('calendario')}>Histórico</TabButton>
-        <TabButton active={tab === 'analise'} onClick={() => setTab('analise')}>Análises</TabButton>
-        <TabButton active={tab === 'dados'} onClick={() => setTab('dados')}>Dados e configurações</TabButton>
-      </nav>
+        <main className="content">
+          {tab === 'registro' && (
+            <>
+              {date !== today && (
+                <button type="button" className="link back" onClick={() => setDate(today)}>
+                  ← Voltar para hoje
+                </button>
+              )}
+              <div className="entry-context">
+                <span className="eyebrow">{date === today ? 'SEU ESPAÇO DE OBSERVAÇÃO' : 'HISTÓRICO · REGISTRO SELECIONADO'}</span>
+                <h1>{date === today ? 'Como foi seu dia?' : 'Revisitar um dia'}</h1>
+                <p>{date === today ? 'Perceba, registre e acompanhe. Não é preciso interpretar tudo agora.' : 'Consulte ou atualize as observações deste dia.'}</p>
+              </div>
+              <DailyForm key={date} date={date} />
+            </>
+          )}
+          {tab === 'calendario' && <Calendar onSelect={openDate} />}
+          {tab === 'analise' && <Analysis />}
+          {tab === 'dados' && <DataPanel onSignOut={onSignOut} />}
+        </main>
+      </div>
     </div>
   );
 }
