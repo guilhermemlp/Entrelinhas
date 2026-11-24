@@ -6,6 +6,7 @@ import {
 import { addDays, daysBetween, monthRange, localDateKey } from './dates';
 import { ALL_INDICATORS, DIMENSIONS, INDICATOR_KEYS } from './indicators';
 import { draftSchema, missingForComplete, exportEntrySchema, backupSchema, type DraftFields } from './schemas';
+import { toCsv, toBackupJson, parseBackup } from './export';
 
 const rec = (date: string, status: DayRecord['status'], v: number | null = null): DayRecord => ({
   date, status, sleep_hours: null,
@@ -213,5 +214,37 @@ describe('validação de backup', () => {
       entries: [entry, { ...entry, entry_date: '2026-05-02' }],
     });
     expect(result.success).toBe(true);
+  });
+});
+
+
+describe('exportação e restauração local', () => {
+  const exportEntry = {
+    entry_date: '2026-05-01',
+    status: 'draft' as const,
+    sleep_hours: null,
+    sleep_notes: '',
+    events_context: '=HYPERLINK("https://example.invalid")',
+    behavior_notes: 'Texto com, vírgula e "aspas"',
+    scores: Object.fromEntries(INDICATOR_KEYS.map(k => [k, null])),
+  };
+
+  it('neutraliza fórmulas em campos textuais do CSV', () => {
+    const csv = toCsv([exportEntry]);
+    expect(csv.startsWith('\uFEFF')).toBe(true);
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).toContain('Texto com, vírgula e ""aspas""');
+  });
+
+  it('mantém os 45 indicadores e valores ausentes no backup JSON', () => {
+    const parsed = parseBackup(toBackupJson([exportEntry]));
+    expect(parsed).toHaveLength(1);
+    expect(Object.keys(parsed[0].scores)).toHaveLength(45);
+    expect(parsed[0].scores.tristeza).toBeNull();
+    expect(parsed[0].events_context).toBe(exportEntry.events_context);
+  });
+
+  it('rejeita JSON inválido sem tentar importar dados parciais', () => {
+    expect(() => parseBackup('{ arquivo inválido')).toThrow('O arquivo não é um JSON válido.');
   });
 });
