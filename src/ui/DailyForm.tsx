@@ -40,6 +40,7 @@ export function DailyForm({ date }: { date: string }) {
   const [offlineConflict, setOfflineConflict] = useState(false);
   const [step, setStep] = useState(0);
   const [showMissing, setShowMissing] = useState(false);
+  const [confirmCompletion, setConfirmCompletion] = useState(false);
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const previousStepRef = useRef(step);
 
@@ -227,7 +228,8 @@ export function DailyForm({ date }: { date: string }) {
         if (!saved) return;
       }
       await completeEntry(entryRef.current.id);
-      setStatus('complete'); setDirty(false);
+      setStatus('complete'); setDirty(false); setSaveState('saved');
+      setConfirmCompletion(false);
       setMessage('Registro concluído.');
     } catch (err) {
       setSaveState('error');
@@ -281,9 +283,11 @@ export function DailyForm({ date }: { date: string }) {
         <span className={`badge ${status}`}>
           {status === 'complete' ? 'Concluído' : 'Rascunho'}
         </span>
-        <small className="save-state">
+        <small className={`save-state ${saveState === 'error' ? 'save-error' : ''}`} role="status" aria-live="polite">
           {saveState === 'saving' && 'Salvando…'}
-          {saveState === 'saved' && !dirty && 'Salvo'}
+          {saveState === 'saved' && !dirty && 'Alterações salvas'}
+          {dirty && saveState !== 'saving' && 'Alterações pendentes'}
+          {saveState === 'error' && 'Falha ao salvar'}
         </small>
       </header>
 
@@ -334,9 +338,13 @@ export function DailyForm({ date }: { date: string }) {
       </p>
 
       {status === 'complete' && (
-        <p className="notice">
-          Registro concluído. Alterações são gravadas no histórico de revisões.
-        </p>
+        <section className="completion-notice" role="status">
+          <span className="completion-check" aria-hidden="true">✓</span>
+          <div>
+            <h3>Seu registro está concluído</h3>
+            <p>As respostas deste dia foram registradas. Você ainda pode revisitar e editar este conteúdo; as alterações ficam no histórico de revisões.</p>
+          </div>
+        </section>
       )}
 
       {step === 0 && (
@@ -462,14 +470,30 @@ export function DailyForm({ date }: { date: string }) {
             <button
               type="button"
               className="primary"
-              onClick={onComplete}
+              onClick={() => setConfirmCompletion(true)}
               disabled={status === 'complete' || saveState === 'saving' || offlineConflict}
             >
-              Concluir registro
+              Revisar e concluir
             </button>
           )}
         </div>
       </footer>
+
+      {confirmCompletion && status !== 'complete' && (
+        <div className="completion-backdrop">
+          <section className="completion-dialog" role="dialog" aria-modal="true" aria-labelledby="completion-dialog-title" aria-describedby="completion-dialog-description">
+            <span className="eyebrow">ÚLTIMA ETAPA</span>
+            <h3 id="completion-dialog-title">Concluir o registro deste dia?</h3>
+            <p id="completion-dialog-description">Você preencheu {completedRequired} de {totalRequired} campos obrigatórios. Ao confirmar, este dia será marcado como concluído. Você ainda poderá voltar e editar as respostas depois.</p>
+            <div className="completion-dialog-actions">
+              <button type="button" className="secondary" onClick={() => setConfirmCompletion(false)} disabled={saveState === 'saving'}>Continuar revisando</button>
+              <button type="button" className="primary" onClick={() => void onComplete()} disabled={saveState === 'saving'}>
+                {saveState === 'saving' ? 'Concluindo…' : 'Confirmar conclusão'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </form>
   );
 }
