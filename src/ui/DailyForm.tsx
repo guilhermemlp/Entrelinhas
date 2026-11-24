@@ -196,6 +196,20 @@ export function DailyForm({ date }: { date: string }) {
     return () => clearTimeout(t);
   }, [dirty, fields, persist]);
 
+  // Ao recuperar a conexão, tenta sincronizar o rascunho local sem exigir nova edição.
+  useEffect(() => {
+    if (!dirty) return;
+    const retrySync = () => {
+      if (!navigator.onLine || offlineConflictRef.current) return;
+      const revision = revisionRef.current;
+      void persist().then(ok => {
+        if (ok && revisionRef.current === revision) setDirty(false);
+      });
+    };
+    window.addEventListener('online', retrySync);
+    return () => window.removeEventListener('online', retrySync);
+  }, [dirty, persist]);
+
   function update(fn: (f: DraftFields) => DraftFields) {
     const next = fn(fieldsRef.current!);
     fieldsRef.current = next;
@@ -225,7 +239,10 @@ export function DailyForm({ date }: { date: string }) {
         );
         if (targetStep >= 0) setStep(targetStep);
       } else if (f.sleep_hours === null) {
-        setStep(4);
+        const sleepStep = FORM_STEPS.findIndex(item =>
+          (item.dimensions as readonly string[]).includes('sleep')
+        );
+        setStep(sleepStep);
       } else {
         setStep(FORM_STEPS.length - 1);
       }
