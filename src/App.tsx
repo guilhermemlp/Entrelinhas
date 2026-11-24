@@ -9,11 +9,6 @@ import { DataPanel } from './ui/DataPanel';
 
 type Tab = 'registro' | 'calendario' | 'analise' | 'dados';
 
-// O link mágico deve retornar à mesma origem em que o usuário iniciou o acesso.
-// Isso preserva a sessão no armazenamento local correto, inclusive em previews
-// da Vercel com domínio estável vinculado à branch.
-const getAuthRedirectUrl = () => window.location.origin;
-
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
