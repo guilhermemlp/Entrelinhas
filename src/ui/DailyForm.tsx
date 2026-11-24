@@ -42,6 +42,7 @@ export function DailyForm({ date }: { date: string }) {
   const [step, setStep] = useState(0);
   const [showMissing, setShowMissing] = useState(false);
   const [confirmCompletion, setConfirmCompletion] = useState(false);
+  const [pendingIndicatorKey, setPendingIndicatorKey] = useState<string | null>(null);
   const stepHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const previousStepRef = useRef(step);
 
@@ -53,6 +54,17 @@ export function DailyForm({ date }: { date: string }) {
     stepHeadingRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
     stepHeadingRef.current?.focus({ preventScroll: true });
   }, [step]);
+
+  // Quando a revisão aponta uma pendência específica, abre sua dimensão e leva até o cartão.
+  useEffect(() => {
+    if (!pendingIndicatorKey) return;
+    const target = document.getElementById(`indicator-${pendingIndicatorKey}`);
+    if (!target) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    target.querySelector('button, input')?.focus({ preventScroll: true });
+    setPendingIndicatorKey(null);
+  }, [step, pendingIndicatorKey]);
 
   // Cada persistência entra na mesma fila e aguarda a anterior.
   const entryRef = useRef<LoadedEntry | null>(null);
@@ -440,9 +452,57 @@ export function DailyForm({ date }: { date: string }) {
         </label>
       </section>
       <section className="review-summary">
-        <h3>Revisão do registro</h3>
-        <p>{filled} de {total} indicadores avaliados · {fields.sleep_hours === null ? 'Horas de sono pendentes' : `${fields.sleep_hours} h de sono`}</p>
-        <p>{missingFields.length === 0 ? 'Todos os campos obrigatórios foram preenchidos.' : `Ainda faltam ${missingFields.length} campos obrigatórios.`}</p>
+        <div className="review-summary-heading">
+          <div>
+            <h3>Revisão do registro</h3>
+            <p>{filled} de {total} indicadores avaliados · {fields.sleep_hours === null ? 'Horas de sono pendentes' : `${fields.sleep_hours} h de sono`}</p>
+          </div>
+          <span className={missingFields.length === 0 ? 'review-status ready' : 'review-status'}>
+            {missingFields.length === 0 ? 'Pronto para concluir' : `${missingFields.length} pendências`}
+          </span>
+        </div>
+        {missingFields.length > 0 ? (
+          <div className="review-pending">
+            <h4>O que falta preencher</h4>
+            <p>Selecione um item para voltar diretamente ao ponto que precisa de atenção.</p>
+            {DIMENSIONS.map(dim => {
+              const missing = dim.indicators.filter(ind => fields.scores[ind.key] === null);
+              const target = FORM_STEPS.findIndex(item => (item.dimensions as readonly string[]).includes(dim.key));
+              const sleepMissing = dim.key === 'sleep' && fields.sleep_hours === null;
+              if (missing.length === 0 && !sleepMissing) return null;
+              return (
+                <div className="review-pending-group" key={dim.key}>
+                  <button type="button" className="review-pending-dimension" onClick={() => setStep(target)}>
+                    <strong>{dim.label}</strong>
+                    <span>{missing.length + Number(sleepMissing)} pendente(s) · abrir dimensão →</span>
+                  </button>
+                  {sleepMissing && (
+                    <button type="button" className="review-pending-item" onClick={() => setStep(target)}>
+                      Horas de sono <span>Não informado · ir para o campo</span>
+                    </button>
+                  )}
+                  {missing.map(ind => (
+                    <button type="button" className="review-pending-item" key={ind.key} onClick={() => {
+                      setPendingIndicatorKey(ind.key);
+                      setStep(target);
+                    }}>
+                      {ind.label} <span>Não avaliado · abrir indicador</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+            {(fields.events_context.trim() === '' || fields.behavior_notes.trim() === '') && (
+              <div className="review-pending-group">
+                <strong>Narrativa e contexto</strong>
+                {fields.events_context.trim() === '' && <button type="button" className="review-pending-item" onClick={() => setStep(FORM_STEPS.length - 1)}>Acontecimentos e contexto <span>Pendente · preencher narrativa</span></button>}
+                {fields.behavior_notes.trim() === '' && <button type="button" className="review-pending-item" onClick={() => setStep(FORM_STEPS.length - 1)}>Observações sobre seu comportamento <span>Pendente · preencher narrativa</span></button>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="review-all-complete">Todos os campos obrigatórios foram preenchidos. Revise as respostas e confirme a conclusão quando estiver pronto.</p>
+        )}
         <div className="review-dimensions">
           {DIMENSIONS.map(dim => {
             const done = dim.indicators.filter(ind => fields.scores[ind.key] !== null).length
