@@ -418,7 +418,7 @@ export function DailyForm({ date }: { date: string }) {
           onNavigateIndicator={key => {
             const target = document.getElementById(`indicator-${key}`);
             target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-            target?.querySelector('button, input')?.focus({ preventScroll: true });
+            (target?.querySelector('button, input') as HTMLElement | null)?.focus({ preventScroll: true });
           }}
         />
       ))}
