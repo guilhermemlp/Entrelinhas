@@ -489,9 +489,13 @@ function DimensionSection({
   return (
     <details className="dimension" open>
       <summary>
-        {dim.label}
-        <span className="count">
-          {filled + (isSleep && sleepDone ? 1 : 0)}/{dim.indicators.length + (isSleep ? 1 : 0)}
+        <span className="dimension-summary-copy">
+          <strong>{dim.label}</strong>
+          <small>{filled + (isSleep && sleepDone ? 1 : 0)} de {dim.indicators.length + (isSleep ? 1 : 0)} avaliados</small>
+        </span>
+        <span className="dimension-summary-status">
+          <span className="dimension-summary-track"><i style={{ width: `${(filled + (isSleep && sleepDone ? 1 : 0)) / (dim.indicators.length + (isSleep ? 1 : 0)) * 100}%` }} /></span>
+          <span className="count">{filled + (isSleep && sleepDone ? 1 : 0)}/{dim.indicators.length + (isSleep ? 1 : 0)}</span>
         </span>
       </summary>
 
@@ -539,11 +543,17 @@ function ScoreInput({
       <legend className="score-legend">{label}</legend>
       <div className="score-head">
         <span className="score-kind">{scaleKind === 'intensidade' ? 'Intensidade' : scaleKind === 'capacidade' ? 'Capacidade' : scaleKind === 'qualidade' ? 'Qualidade' : 'Frequência'}</span>
-        <output className={value === null ? 'score-value unset' : 'score-value'} htmlFor={key}>
-          {value === null ? 'Não avaliado' : value}
+        <output className={value === null ? 'score-value unset' : 'score-value'} htmlFor={key} aria-live="polite">
+          {value === null ? 'Não avaliado' : `${value} / 10`}
         </output>
       </div>
-      <div className="score-options" role="group" aria-label={`Pontuação de 0 a 10 para ${label}`}>
+      <p className="score-meaning">
+        {scaleKind === 'intensidade' && 'Indica o quanto essa experiência esteve presente ou foi intensa. Uma pontuação alta não significa algo positivo ou negativo.'}
+        {scaleKind === 'capacidade' && 'Indica como você percebeu sua capacidade neste aspecto: valores maiores representam maior capacidade percebida.'}
+        {scaleKind === 'qualidade' && 'Indica sua percepção de qualidade: valores maiores representam uma experiência melhor neste aspecto.'}
+        {scaleKind === 'frequencia' && 'Indica com que frequência isso aconteceu: valores maiores representam mais ocorrências.'}
+      </p>
+      <div className="score-options" role="group" aria-label={`Selecione um valor de 0 a 10 para ${label}`} aria-describedby={hintId}>
         {Array.from({ length: 11 }, (_, score) => (
           <button
             key={score}
@@ -563,7 +573,7 @@ function ScoreInput({
         <span>10 · {scaleHigh}</span>
       </div>
       {value === null ? (
-        <p className="score-unset-hint">Selecione uma opção. Nenhuma pontuação está pré-selecionada.</p>
+        <p className="score-unset-hint">Selecione um valor. Se não conseguir avaliar, mantenha sem preenchimento.</p>
       ) : (
         <button type="button" className="link clear-score" onClick={() => onChange(null)} aria-label={`Limpar avaliação de ${label}`}>Limpar avaliação</button>
       )}
